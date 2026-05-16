@@ -11,7 +11,7 @@ let lastVideoTime = -1;
 let cameraStream = null;
 
 let isCountingDown = false;
-let measurementBuffer = []; // 3 saniye boyunca toplanacak oran verileri
+let measurementBuffer = []; // 3 saniye boyunca toplanacak füzyonlanmış bilek verileri
 let countdownInterval;
 
 // Kamera Modu (Mobil: Arka, PC: Ön)
@@ -43,7 +43,9 @@ async function initializeMediaPipe() {
             delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: 1
+        numHands: 1,
+        minHandDetectionConfidence: 0.7, // Yanıp sönmeyi engeller, modeli daha kararlı olmaya zorlar
+        minHandPresenceConfidence: 0.7
     });
 }
 initializeMediaPipe();
@@ -86,42 +88,23 @@ window.toggleCamera = function() {
     startCamera();
 };
 
-// --- YARDIMCI MATEMATİK FONKSİYONLARI ---
+// --- YARDIMCI MATEMATİK VE BİYOLOJİ FONKSİYONLARI ---
 function rgbToHex(r, g, b) {
     return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
 }
 
-function getDistance(p1, p2, width, height) {
-    return Math.sqrt(Math.pow((p2.x - p1.x) * width, 2) + Math.pow((p2.y - p1.y) * height, 2));
-}
+// Tıbbi Normlara Göre Ön Beklenti (Prior) Hesaplama (Türkiye Popülasyonu Normları)
+function calculatePriorWrist(height, weight, gender) {
+    let base = gender === 'male' ? height / 10.0 : height / 10.5;
+    let bmi = weight / Math.pow(height / 100, 2);
 
-// --- ZEKİ ARALIK HESAPLAMA (HEURISTIC ALGORITHM) ---
-function calculateWristRange(handRatio, height, weight, gender) {
-    // 1. Temel Başlangıç Değeri
-    let baseWrist = 16.0; 
-    if (gender === 'male') baseWrist = 17.0;
-    if (gender === 'female') baseWrist = 15.0;
-
-    // 2. Vücut Kitle İndeksi (VKİ) Etkisi
-    const bmi = weight / Math.pow(height / 100, 2);
-    let bmiModifier = 0;
-    if (bmi > 25) bmiModifier = (bmi - 25) * 0.15;
-    if (bmi < 18.5) bmiModifier = (bmi - 18.5) * 0.15; 
-    
-    // VKİ etkisini sınırla
-    bmiModifier = Math.max(-2.0, Math.min(2.5, bmiModifier));
-
-    // 3. Anatomik El Oranı Etkisi (Ortalama oran 0.70 civarıdır)
-    let ratioModifier = (handRatio - 0.70) * 8; 
-
-    // Tahmini net değeri bul
-    let estimatedWrist = baseWrist + bmiModifier + ratioModifier;
-
-    // Kullanıcıya sunulacak 1 cm'lik aralığı (Range) oluştur
-    let lowerBound = (estimatedWrist - 0.5).toFixed(1);
-    let upperBound = (estimatedWrist + 0.5).toFixed(1);
-    
-    return `${lowerBound} - ${upperBound}`;
+    // VKİ Düzeltmesi (Adipoz doku birikimi analizi)
+    if (bmi > 25.0) {
+        base += (bmi - 25.0) * 0.15;
+    } else if (bmi < 18.5) {
+        base -= (18.5 - bmi) * 0.10;
+    }
+    return base;
 }
 
 // --- GÖRÜNTÜ İŞLEME DÖNGÜSÜ ---
@@ -144,30 +127,51 @@ async function predictWebcam() {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-        if (results.landmarks && results.landmarks.length > 0) {
+        // Hem 2B Ekran hem de 3B Dünya Koordinatlarının geldiğinden emin olalım
+        if (results.landmarks && results.landmarks.length > 0 && results.worldLandmarks && results.worldLandmarks.length > 0) {
             const landmarks = results.landmarks[0];
+            const worldLandmarks = results.worldLandmarks[0];
             
-            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
-            drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 1, radius: 3 });
+            // Çizimleri kalınlaştırdık (İnce ve cılız görünme sorunu çözüldü)
+            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 4 });
+            drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2, radius: 5 });
 
-            // Z ekseninden bağımsız anatomik oran hesaplama
-            const wrist = landmarks[0];
-            const middleMcp = landmarks[9]; // El uzunluğu referansı
-            const indexMcp = landmarks[5]; // Avuç genişliği sol sınır
-            const pinkyMcp = landmarks[17]; // Avuç genişliği sağ sınır
+            // 1. GÖRSEL ÖLÇÜM (3B Dünya Koordinatları ile Derinlikten Bağımsız)
+            const indexMcpW = worldLandmarks[5];
+            const pinkyMcpW = worldLandmarks[17];
 
-            const handLength = getDistance(wrist, middleMcp, videoElement.videoWidth, videoElement.videoHeight);
-            const palmWidth = getDistance(indexMcp, pinkyMcp, videoElement.videoWidth, videoElement.videoHeight);
-            
-            const handRatio = palmWidth / handLength;
+            // 3B Öklid Mesafesi (Metre cinsinden hesaplanır, cm'ye çevrilir)
+            const dx = pinkyMcpW.x - indexMcpW.x;
+            const dy = pinkyMcpW.y - indexMcpW.y;
+            const dz = pinkyMcpW.z - indexMcpW.z;
+            const palmWidthMeters = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            const palmWidthCm = palmWidthMeters * 100;
 
-            // VKİ ve Oran kullanarak anlık tahmini aralığı bul
-            const liveRange = calculateWristRange(handRatio, window.userData.height, window.userData.weight, window.userData.gender);
+            // Yatay çap (2a) ve derinlik (2b) hesaplaması (Anatomik Oranlar)
+            const width2a = palmWidthCm / 1.45; 
+            const depth2b = width2a * 0.68; 
 
-            // Ten Rengi
+            const a = width2a / 2;
+            const b = depth2b / 2;
+
+            // Ramanujan Elips Çevre Formülü (Görsel Tahmin)
+            const cVisual = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+
+            // 2. İSTATİSTİKSEL ÖN BEKLENTİ (Biyolojik Gerçeklik)
+            const cPrior = calculatePriorWrist(window.userData.height, window.userData.weight, window.userData.gender);
+
+            // 3. BAYESYAN VERİ FÜZYONU (Hata Filtreleme)
+            // Biyolojik veriye %60, kamera verisine %40 güveniyoruz
+            const alpha = 0.6; 
+            const finalWristCm = (alpha * cPrior) + ((1 - alpha) * cVisual);
+
+            // Kullanıcıya aralık sunmak için -0.5 ve +0.5 marjı ekle
+            const liveRange = `${(finalWristCm - 0.5).toFixed(1)} - ${(finalWristCm + 0.5).toFixed(1)} cm`;
+
+            // Ten Rengi Çekme İşlemi (Gizli tuvalden)
             let hexColor = "#000000";
-            const pixelX = Math.floor(wrist.x * videoElement.videoWidth);
-            const pixelY = Math.floor(wrist.y * videoElement.videoHeight);
+            const pixelX = Math.floor(landmarks[0].x * videoElement.videoWidth);
+            const pixelY = Math.floor(landmarks[0].y * videoElement.videoHeight);
             if (pixelX >= 0 && pixelX < videoElement.videoWidth && pixelY >= 0 && pixelY < videoElement.videoHeight) {
                 const pixelData = hiddenCtx.getImageData(pixelX, pixelY, 1, 1).data;
                 hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
@@ -177,8 +181,8 @@ async function predictWebcam() {
             document.getElementById('live-wrist').innerText = liveRange;
             document.getElementById('live-color-box').style.backgroundColor = hexColor;
 
-            // Hizalama Kontrolü
-            const isHandInBox = (wrist.x > 0.40 && wrist.x < 0.60 && wrist.y > 0.40 && wrist.y < 0.85);
+            // Hizalama Kontrolü (El filigranın içinde mi?)
+            const isHandInBox = (landmarks[0].x > 0.40 && landmarks[0].x < 0.60 && landmarks[0].y > 0.40 && landmarks[0].y < 0.85);
 
             if (isHandInBox && !isCountingDown) {
                 startCountdown();
@@ -186,9 +190,9 @@ async function predictWebcam() {
                 cancelCountdown();
             }
 
-            // Geri sayım sürüyorsa verileri tampona (buffer) at
+            // Geri sayım sürüyorsa füzyonlanmış verileri tampona at
             if (isCountingDown) {
-                measurementBuffer.push({ ratio: handRatio, color: hexColor });
+                measurementBuffer.push({ wristVal: finalWristCm, color: hexColor });
             }
         } else {
             if (isCountingDown) cancelCountdown();
@@ -198,13 +202,13 @@ async function predictWebcam() {
     window.requestAnimationFrame(predictWebcam);
 }
 
-// --- GERİ SAYIM YÖNETİMİ ---
+// --- GERİ SAYIM YÖNETİMİ VE DURUM PANELİ ---
 function startCountdown() {
     isCountingDown = true;
     measurementBuffer = []; 
     
     const statusMsg = document.getElementById('status-message');
-    statusMsg.classList.add('counting'); // Turuncu renk efekti verir
+    statusMsg.classList.add('counting'); 
     
     let count = 3;
     statusMsg.innerText = `Ölçüm ayarlandı, sabit durun: ${count}`;
@@ -229,16 +233,15 @@ function cancelCountdown() {
     const statusMsg = document.getElementById('status-message');
     statusMsg.classList.remove('counting');
     statusMsg.innerText = "El hizalaması bekleniyor...";
-    
-    console.log("El hizadan çıktı, ölçüm iptal edildi.");
 }
 
 function finalizeMeasurement() {
-    let totalRatio = 0;
-    measurementBuffer.forEach(data => totalRatio += data.ratio);
-    const averageRatio = totalRatio / measurementBuffer.length;
+    // Toplanan ölçümlerin ortalamasını alarak mikro titremeleri tamamen sil
+    let totalWrist = 0;
+    measurementBuffer.forEach(data => totalWrist += data.wristVal);
+    const avgWrist = totalWrist / measurementBuffer.length;
     
-    window.userData.wristRangeStr = calculateWristRange(averageRatio, window.userData.height, window.userData.weight, window.userData.gender);
+    window.userData.wristRangeStr = `${(avgWrist - 0.5).toFixed(1)} - ${(avgWrist + 0.5).toFixed(1)} cm`;
     if (measurementBuffer.length > 0) window.userData.skinColorHex = measurementBuffer[measurementBuffer.length - 1].color;
 
     console.log("Ölçüm Tamamlandı! Kilitlenen Aralık:", window.userData.wristRangeStr);
@@ -308,7 +311,7 @@ window.nextStep = function(stepNumber) {
             return; 
         }
         console.log("Yapay Zekaya Giden Veri:", window.userData);
-        // İleride buraya fetch isteğini ekleyeceğiz
+        // İleride buraya FastAPI fetch isteğini ekleyeceğiz
     }
 
     const allSteps = document.querySelectorAll('.wizard-step');

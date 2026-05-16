@@ -29,6 +29,10 @@ const canvasCtx = canvasElement.getContext('2d', { willReadFrequently: true });
 const hiddenCanvas = document.createElement('canvas');
 const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
 
+// Varsayılan olarak mobil ise arka kamera, masaüstü ise ön kamera
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let currentFacingMode = isMobileDevice ? "environment" : "user";
+
 // --- MEDIAPIPE BAŞLATMA ---
 async function initializeMediaPipe() {
     console.log("Yapay Zeka Modelleri Yükleniyor...");
@@ -50,18 +54,12 @@ initializeMediaPipe();
 // --- KAMERA YÖNETİMİ ---
 async function startCamera() {
     if (!handLandmarker) {
-        alert("Modeller henüz yüklenmedi, lütfen 1-2 saniye bekleyin.");
+        alert("Modeller henüz yüklenmedi, lütfen bekleyin.");
         return;
     }
 
-    // Cihazın mobil olup olmadığını basitçe tespit et
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Mobilde arka kamera, masaüstünde ön kamera
-    const facingMode = isMobile ? "environment" : "user";
-    
-    // Masaüstünde ayna efekti ver (ön kamera kullanıldığı için)
-    if (!isMobile) {
+    // Ayna efekti (Sadece ön kameradaysa aynala)
+    if (currentFacingMode === "user") {
         videoElement.style.transform = "scaleX(-1)";
         canvasElement.style.transform = "scaleX(-1)";
     } else {
@@ -70,7 +68,7 @@ async function startCamera() {
     }
 
     const constraints = {
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: facingMode },
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: currentFacingMode },
         audio: false
     };
 
@@ -85,6 +83,18 @@ async function startCamera() {
         console.error("Kamera açılamadı:", error);
     }
 }
+
+// YENİ: Kamera Çevirme Fonksiyonu
+window.toggleCamera = function() {
+    // Mevcut akışı durdur
+    stopCamera();
+    
+    // Modu değiştir
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    
+    // Yeniden başlat
+    startCamera();
+};
 
 function stopCamera() {
     webcamRunning = false;

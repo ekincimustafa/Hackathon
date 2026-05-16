@@ -67,18 +67,25 @@
             <canvas id="output_canvas"></canvas>
             
             <div id="hand-guide" class="hand-guide">
-                <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50,120 L50,80 C50,80 30,70 30,50 L30,30 C30,25 35,25 35,30 L35,50 C35,50 40,55 40,55 L40,15 C40,10 45,10 45,15 L45,55 C45,55 50,55 50,55 L50,10 C50,5 55,5 55,10 L55,55 C55,55 60,55 60,55 L60,20 C60,15 65,15 65,20 L65,55 C65,55 70,60 75,65 C80,70 80,85 80,85 L70,120 Z" fill="none" stroke="rgba(255,107,0,0.6)" stroke-width="2" stroke-dasharray="4"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,107,0,0.7)" stroke-width="0.8" stroke-dasharray="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-4 0v4"/>
+                    <path d="M14 10V4a2 2 0 0 0-4 0v6"/>
+                    <path d="M10 10.5V5a2 2 0 0 0-4 0v7"/>
+                    <path d="M6 14v-2a2 2 0 0 0-4 0v5.5c0 3.5 3 6.5 6.5 6.5h3c3.5 0 6.5-3 6.5-6.5V11a2 2 0 0 0-4 0v4"/>
                 </svg>
             </div>
 
-            <div id="live-stats" class="live-stats">
-                <div class="stat-item">📏 Bilek: <span id="live-wrist">--</span> cm</div>
-                <div class="stat-item">🎨 Ten: <div id="live-color-box" class="color-box"></div></div>
-            </div>
-            <div id="countdown-overlay" class="countdown-overlay">3</div>
             <button id="flip-camera-btn" class="flip-btn" onclick="toggleCamera()">🔄 Çevir</button>
         </div>
+
+        <div class="status-panel">
+            <div class="status-message" id="status-message">El hizalaması bekleniyor...</div>
+            <div class="live-stats">
+                <div class="stat-item">📏 Bilek: <span id="live-wrist" style="color: #FF6B00; font-weight: bold; margin-left: 5px;">--</span></div>
+                <div class="stat-item">🎨 Ten: <div id="live-color-box" class="color-box"></div></div>
+            </div>
+        </div>
+
         <button class="btn-secondary" style="margin-top: 15px;" onclick="nextStep(2)">İptal Et</button>
     </div>
 

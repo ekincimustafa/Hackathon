@@ -93,7 +93,7 @@ body {
 
 .camera-container {
     width: 100%;
-    height: 300px;
+    height: 400px;
     background-color: #000;
     border-radius: 12px;
     display: flex;
@@ -117,8 +117,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 120px;
-    height: 180px;
+    width: 140px;
+    height: 200px;
     border: 3px dashed rgba(255, 107, 0, 0.7); /* Şeffaf Turuncu */
     border-radius: 20px;
     z-index: 3;
@@ -127,6 +127,7 @@ body {
     justify-content: center;
     padding-bottom: 10px;
     pointer-events: none; /* Tıklamaları engellememesi için */
+    background-color: rgba(255, 107, 0, 0.05); /* İçine çok hafif bir renk verdik */
 }
 
 .guide-text {

@@ -4,43 +4,39 @@ import {
     DrawingUtils
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
-// --- GLOBAL DEĞİŞKENLER VE VERİ DEPOSU ---
+// --- GLOBAL DEĞİŞKENLER ---
 let handLandmarker = undefined;
 let webcamRunning = false;
 let lastVideoTime = -1;
 let cameraStream = null;
-let isCountingDown = false;
-let measurementBuffer = []; // 3 saniye boyunca alınan ölçümlerin ortalamasını almak için
 
-// Backend'e gönderilecek kullanıcı verileri
+let isCountingDown = false;
+let measurementBuffer = []; // 3 saniye boyunca toplanacak oran verileri
+let countdownInterval;
+
+// Kamera Modu (Mobil: Arka, PC: Ön)
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let currentFacingMode = isMobileDevice ? "environment" : "user";
+
+// Backend'e gönderilecek ve UI'da kullanılacak veriler
 window.userData = {
-    gender: '',
+    gender: 'male',
     height: 175,
     weight: 70,
-    wristPixelDistance: 0,
+    wristRangeStr: '', 
     skinColorHex: '#000000',
     productLink: ''
 };
 
-// DOM Elementleri
 const videoElement = document.getElementById('webcam');
 const canvasElement = document.getElementById('output_canvas');
 const canvasCtx = canvasElement.getContext('2d', { willReadFrequently: true });
-
-// Gizli canvas (Ten rengi okumak için)
 const hiddenCanvas = document.createElement('canvas');
 const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
 
-// Varsayılan olarak mobil ise arka kamera, masaüstü ise ön kamera
-const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let currentFacingMode = isMobileDevice ? "environment" : "user";
-
 // --- MEDIAPIPE BAŞLATMA ---
 async function initializeMediaPipe() {
-    console.log("Yapay Zeka Modelleri Yükleniyor...");
-    const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-    );
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
     handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -49,18 +45,13 @@ async function initializeMediaPipe() {
         runningMode: "VIDEO",
         numHands: 1
     });
-    console.log("Modeller Hazır!");
 }
 initializeMediaPipe();
 
 // --- KAMERA YÖNETİMİ ---
 async function startCamera() {
-    if (!handLandmarker) {
-        alert("Modeller henüz yüklenmedi, lütfen bekleyin.");
-        return;
-    }
-
-    // Ayna efekti (Sadece ön kameradaysa aynala)
+    if (!handLandmarker) return;
+    
     if (currentFacingMode === "user") {
         videoElement.style.transform = "scaleX(-1)";
         canvasElement.style.transform = "scaleX(-1)";
@@ -69,13 +60,11 @@ async function startCamera() {
         canvasElement.style.transform = "none";
     }
 
-    const constraints = {
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: currentFacingMode },
-        audio: false
-    };
-
     try {
-        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: currentFacingMode },
+            audio: false
+        });
         videoElement.srcObject = cameraStream;
         videoElement.addEventListener("loadeddata", () => {
             webcamRunning = true;
@@ -86,28 +75,53 @@ async function startCamera() {
     }
 }
 
-// YENİ: Kamera Çevirme Fonksiyonu
+function stopCamera() {
+    webcamRunning = false;
+    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+}
+
 window.toggleCamera = function() {
-    // Mevcut akışı durdur
     stopCamera();
-    
-    // Modu değiştir
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-    
-    // Yeniden başlat
     startCamera();
 };
 
-function stopCamera() {
-    webcamRunning = false;
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-    }
-}
-
-// --- GÖRÜNTÜ İŞLEME DÖNGÜSÜ ---
+// --- YARDIMCI MATEMATİK FONKSİYONLARI ---
 function rgbToHex(r, g, b) {
     return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
+}
+
+function getDistance(p1, p2, width, height) {
+    return Math.sqrt(Math.pow((p2.x - p1.x) * width, 2) + Math.pow((p2.y - p1.y) * height, 2));
+}
+
+// --- ZEKİ ARALIK HESAPLAMA (HEURISTIC ALGORITHM) ---
+function calculateWristRange(handRatio, height, weight, gender) {
+    // 1. Temel Başlangıç Değeri
+    let baseWrist = 16.0; 
+    if (gender === 'male') baseWrist = 17.0;
+    if (gender === 'female') baseWrist = 15.0;
+
+    // 2. Vücut Kitle İndeksi (VKİ) Etkisi
+    const bmi = weight / Math.pow(height / 100, 2);
+    let bmiModifier = 0;
+    if (bmi > 25) bmiModifier = (bmi - 25) * 0.15;
+    if (bmi < 18.5) bmiModifier = (bmi - 18.5) * 0.15; 
+    
+    // VKİ etkisini sınırla
+    bmiModifier = Math.max(-2.0, Math.min(2.5, bmiModifier));
+
+    // 3. Anatomik El Oranı Etkisi (Ortalama oran 0.70 civarıdır)
+    let ratioModifier = (handRatio - 0.70) * 8; 
+
+    // Tahmini net değeri bul
+    let estimatedWrist = baseWrist + bmiModifier + ratioModifier;
+
+    // Kullanıcıya sunulacak 1 cm'lik aralığı (Range) oluştur
+    let lowerBound = (estimatedWrist - 0.5).toFixed(1);
+    let upperBound = (estimatedWrist + 0.5).toFixed(1);
+    
+    return `${lowerBound} - ${upperBound}`;
 }
 
 // --- GÖRÜNTÜ İŞLEME DÖNGÜSÜ ---
@@ -133,157 +147,166 @@ async function predictWebcam() {
         if (results.landmarks && results.landmarks.length > 0) {
             const landmarks = results.landmarks[0];
             
-            // ALIŞTIĞIN RENKLERE GERİ DÖNDÜK (Yeşil çizgiler, Kırmızı noktalar)
             drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
             drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 1, radius: 3 });
 
+            // Z ekseninden bağımsız anatomik oran hesaplama
             const wrist = landmarks[0];
-            const indexMcp = landmarks[5];
+            const middleMcp = landmarks[9]; // El uzunluğu referansı
+            const indexMcp = landmarks[5]; // Avuç genişliği sol sınır
+            const pinkyMcp = landmarks[17]; // Avuç genişliği sağ sınır
 
-            // 1. CANLI ÖLÇÜM HESAPLAMALARI
-            const x1 = wrist.x * videoElement.videoWidth;
-            const y1 = wrist.y * videoElement.videoHeight;
-            const x2 = indexMcp.x * videoElement.videoWidth;
-            const y2 = indexMcp.y * videoElement.videoHeight;
-
-            const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-            const userHeight = window.userData.height || 175;
-            const estimatedCmDistance = userHeight * 0.055; 
-            const cmPerPixel = estimatedCmDistance / pixelDistance;
+            const handLength = getDistance(wrist, middleMcp, videoElement.videoWidth, videoElement.videoHeight);
+            const palmWidth = getDistance(indexMcp, pinkyMcp, videoElement.videoWidth, videoElement.videoHeight);
             
-            // Tahmini bilek çevresini (cm) ekranda göstermek için basit bir katsayı çarpımı
-            const liveWristCm = (pixelDistance * cmPerPixel * 3.5).toFixed(1); 
+            const handRatio = palmWidth / handLength;
 
-            // 2. TEN RENGİ TESPİTİ
+            // VKİ ve Oran kullanarak anlık tahmini aralığı bul
+            const liveRange = calculateWristRange(handRatio, window.userData.height, window.userData.weight, window.userData.gender);
+
+            // Ten Rengi
             let hexColor = "#000000";
-            const pixelX = Math.floor(x1);
-            const pixelY = Math.floor(y1);
+            const pixelX = Math.floor(wrist.x * videoElement.videoWidth);
+            const pixelY = Math.floor(wrist.y * videoElement.videoHeight);
             if (pixelX >= 0 && pixelX < videoElement.videoWidth && pixelY >= 0 && pixelY < videoElement.videoHeight) {
                 const pixelData = hiddenCtx.getImageData(pixelX, pixelY, 1, 1).data;
                 hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
             }
 
-            // 3. EKRANDAKİ UI PANELİNİ GÜNCELLE
-            document.getElementById('live-wrist').innerText = liveWristCm;
+            // Ekrana canlı yazdır
+            document.getElementById('live-wrist').innerText = liveRange;
             document.getElementById('live-color-box').style.backgroundColor = hexColor;
 
-            // 4. HİZALAMA VE GERİ SAYIM KONTROLÜ
-            // Bileğin (wrist.x ve wrist.y) ekranın ortasındaki kılavuz kutuya girip girmediğini kontrol et
-            // Koordinatlar 0.0 ile 1.0 arasındadır. Merkez 0.5'tir.
-            const isHandInBox = (wrist.x > 0.40 && wrist.x < 0.60 && wrist.y > 0.50 && wrist.y < 0.85);
+            // Hizalama Kontrolü
+            const isHandInBox = (wrist.x > 0.40 && wrist.x < 0.60 && wrist.y > 0.40 && wrist.y < 0.85);
 
             if (isHandInBox && !isCountingDown) {
                 startCountdown();
+            } else if (!isHandInBox && isCountingDown) {
+                cancelCountdown();
             }
 
-            // Eğer geri sayım başladıysa, verileri tampona (buffer) kaydet ki ortalamasını alalım
+            // Geri sayım sürüyorsa verileri tampona (buffer) at
             if (isCountingDown) {
-                measurementBuffer.push({
-                    pixelDist: pixelDistance,
-                    color: hexColor
-                });
+                measurementBuffer.push({ ratio: handRatio, color: hexColor });
             }
+        } else {
+            if (isCountingDown) cancelCountdown();
         }
         canvasCtx.restore();
     }
     window.requestAnimationFrame(predictWebcam);
 }
 
-// --- YENİ: GERİ SAYIM VE OTOMATİK GEÇİŞ FONKSİYONLARI ---
+// --- GERİ SAYIM YÖNETİMİ ---
 function startCountdown() {
     isCountingDown = true;
-    measurementBuffer = []; // Önceki verileri temizle
+    measurementBuffer = []; 
     
     const overlay = document.getElementById('countdown-overlay');
     overlay.style.display = 'flex';
     let count = 3;
     overlay.innerText = count;
 
-    const interval = setInterval(() => {
+    countdownInterval = setInterval(() => {
         count--;
         if (count > 0) {
             overlay.innerText = count;
         } else {
-            clearInterval(interval);
+            clearInterval(countdownInterval);
             overlay.style.display = 'none';
             finalizeMeasurement();
         }
-    }, 1000); // Her 1 saniyede (1000ms) bir çalışır
+    }, 1000);
+}
+
+function cancelCountdown() {
+    isCountingDown = false;
+    clearInterval(countdownInterval);
+    document.getElementById('countdown-overlay').style.display = 'none';
+    console.log("El hizadan çıktı, ölçüm iptal edildi.");
 }
 
 function finalizeMeasurement() {
-    // 3 saniye boyunca toplanan piksel mesafelerinin ortalamasını alarak titreme hatasını yok et
-    let totalPixelDist = 0;
-    measurementBuffer.forEach(data => {
-        totalPixelDist += data.pixelDist;
-    });
+    let totalRatio = 0;
+    measurementBuffer.forEach(data => totalRatio += data.ratio);
+    const averageRatio = totalRatio / measurementBuffer.length;
     
-    const averagePixelDist = totalPixelDist / measurementBuffer.length;
-    
-    // Verileri global objemize kaydet
-    window.userData.wristPixelDistance = averagePixelDist;
-    
-    // Son okunan rengi al
-    if (measurementBuffer.length > 0) {
-        window.userData.skinColorHex = measurementBuffer[measurementBuffer.length - 1].color;
-    }
+    window.userData.wristRangeStr = calculateWristRange(averageRatio, window.userData.height, window.userData.weight, window.userData.gender);
+    if (measurementBuffer.length > 0) window.userData.skinColorHex = measurementBuffer[measurementBuffer.length - 1].color;
 
-    console.log("Ölçüm Kilitlendi! Ortalama Piksel:", averagePixelDist);
+    console.log("Ölçüm Tamamlandı! Kilitlenen Aralık:", window.userData.wristRangeStr);
     
-    // Kamerayı kapat ve otomatik olarak Trendyol Linki isteme (Asistana Sor) aşamasına geç!
+    stopCamera();
+    updateSummaryScreen();
     nextStep(4); 
 }
 
-// --- EKRAN YÖNETİMİ (WIZARD) ---
-window.nextStep = function(stepNumber) {
-    // 2. Adıma geçerken verileri kaydet
-    if (stepNumber === 3) {
+// --- UI YÖNETİMİ VE EKRAN GEÇİŞLERİ ---
+window.toggleMethod = function() {
+    const method = document.querySelector('input[name="measureMethod"]:checked').value;
+    if (method === 'camera') {
+        document.getElementById('camera-params').style.display = 'block';
+        document.getElementById('manual-params').style.display = 'none';
+    } else {
+        document.getElementById('camera-params').style.display = 'none';
+        document.getElementById('manual-params').style.display = 'block';
+    }
+};
+
+window.proceedFromStep2 = function() {
+    const method = document.querySelector('input[name="measureMethod"]:checked').value;
+    
+    if (method === 'camera') {
         window.userData.gender = document.getElementById('gender').value;
         window.userData.height = parseFloat(document.getElementById('height').value) || 175;
         window.userData.weight = parseFloat(document.getElementById('weight').value) || 70;
-        startCamera(); // 3. adıma geçildiğinde kamerayı aç
+        nextStep(3);
     } else {
-        stopCamera(); // Diğer adımlarda kamerayı kapat (Performans için)
+        const manualVal = parseFloat(document.getElementById('manual-wrist').value);
+        if(!manualVal) {
+            alert("Lütfen geçerli bir bilek çevresi girin.");
+            return;
+        }
+        window.userData.wristRangeStr = `${manualVal} cm (Manuel)`;
+        window.userData.skinColorHex = null; 
+        
+        updateSummaryScreen();
+        nextStep(4);
+    }
+};
+
+function updateSummaryScreen() {
+    document.getElementById('summary-wrist').innerText = window.userData.wristRangeStr;
+    
+    const colorWrapper = document.getElementById('summary-color-wrapper');
+    if (window.userData.skinColorHex) {
+        colorWrapper.style.display = 'flex';
+        document.getElementById('summary-color').style.backgroundColor = window.userData.skinColorHex;
+    } else {
+        colorWrapper.style.display = 'none';
+    }
+}
+
+window.nextStep = function(stepNumber) {
+    if (stepNumber === 3) {
+        startCamera(); 
+    } else {
+        stopCamera(); 
     }
 
-    // 4. Adıma (Sonuç) geçerken verileri topla ve API'ye at
-    if (stepNumber === 4) {
+    if (stepNumber === 5) {
         window.userData.productLink = document.getElementById('productLink').value;
-        const resultBox = document.getElementById('result-box');
-        
-        resultBox.innerHTML = "<p>Yapay zeka saat linkini inceliyor ve bilek profilinize göre ölçümleri analiz ediyor... Lütfen bekleyin.</p>";
-        
-        // Backend'e istek at (fetch)
-        fetch('http://127.0.0.1:8000/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(window.userData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Backend'den gelen cevap:", data);
-            if(data.status === "success") {
-                resultBox.innerHTML = `
-                    <h3 style="color: #FF6B00; margin-top:0;">Analiz Tamamlandı</h3>
-                    <p><strong>Öneri:</strong> ${data.recommendation}</p>
-                    <p style="font-size: 0.85em; color: #888;">Çekilen Ürün Verisi: ${data.scraped_data.kasa_capi} / ${data.scraped_data.materyal}</p>
-                `;
-            } else {
-                resultBox.innerHTML = `<p style="color: red;">Bir hata oluştu: ${data.detail}</p>`;
-            }
-        })
-        .catch(error => {
-            console.error('Hata:', error);
-            resultBox.innerHTML = `<p style="color: red;">Sunucuya bağlanılamadı. Lütfen backend'in çalıştığından emin olun.</p>`;
-        });
+        if (!window.userData.productLink) {
+            alert("Lütfen analiz için bir saat linki yapıştırın.");
+            return; 
+        }
+        console.log("Yapay Zekaya Giden Veri:", window.userData);
+        // İleride buraya fetch isteğini ekleyeceğiz
     }
 
-    // UI Geçişi
     const allSteps = document.querySelectorAll('.wizard-step');
     allSteps.forEach(step => step.classList.remove('active'));
-    
     const targetStep = document.getElementById(`step-${stepNumber}`);
     if (targetStep) targetStep.classList.add('active');
 };

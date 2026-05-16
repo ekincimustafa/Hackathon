@@ -9,6 +9,8 @@ let handLandmarker = undefined;
 let webcamRunning = false;
 let lastVideoTime = -1;
 let cameraStream = null;
+let isCountingDown = false;
+let measurementBuffer = []; // 3 saniye boyunca alınan ölçümlerin ortalamasını almak için
 
 // Backend'e gönderilecek kullanıcı verileri
 window.userData = {
@@ -108,6 +110,7 @@ function rgbToHex(r, g, b) {
     return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
 }
 
+// --- GÖRÜNTÜ İŞLEME DÖNGÜSÜ ---
 async function predictWebcam() {
     if (!webcamRunning) return;
 
@@ -130,33 +133,105 @@ async function predictWebcam() {
         if (results.landmarks && results.landmarks.length > 0) {
             const landmarks = results.landmarks[0];
             
-            // İskeleti çiz (Frictionless UX için yeşil çizgiler)
-            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#FF6B00", lineWidth: 2 });
-            drawingUtils.drawLandmarks(landmarks, { color: "#FFFFFF", lineWidth: 1, radius: 3 });
+            // ALIŞTIĞIN RENKLERE GERİ DÖNDÜK (Yeşil çizgiler, Kırmızı noktalar)
+            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
+            drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 1, radius: 3 });
 
-            // 0: Bilek, 5: İşaret parmağı kökü
             const wrist = landmarks[0];
             const indexMcp = landmarks[5];
 
-            // Pikselleri hesapla
+            // 1. CANLI ÖLÇÜM HESAPLAMALARI
             const x1 = wrist.x * videoElement.videoWidth;
             const y1 = wrist.y * videoElement.videoHeight;
             const x2 = indexMcp.x * videoElement.videoWidth;
             const y2 = indexMcp.y * videoElement.videoHeight;
 
-            window.userData.wristPixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const userHeight = window.userData.height || 175;
+            const estimatedCmDistance = userHeight * 0.055; 
+            const cmPerPixel = estimatedCmDistance / pixelDistance;
+            
+            // Tahmini bilek çevresini (cm) ekranda göstermek için basit bir katsayı çarpımı
+            const liveWristCm = (pixelDistance * cmPerPixel * 3.5).toFixed(1); 
 
-            // Ten rengini al
+            // 2. TEN RENGİ TESPİTİ
+            let hexColor = "#000000";
             const pixelX = Math.floor(x1);
             const pixelY = Math.floor(y1);
             if (pixelX >= 0 && pixelX < videoElement.videoWidth && pixelY >= 0 && pixelY < videoElement.videoHeight) {
                 const pixelData = hiddenCtx.getImageData(pixelX, pixelY, 1, 1).data;
-                window.userData.skinColorHex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+                hexColor = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+            }
+
+            // 3. EKRANDAKİ UI PANELİNİ GÜNCELLE
+            document.getElementById('live-wrist').innerText = liveWristCm;
+            document.getElementById('live-color-box').style.backgroundColor = hexColor;
+
+            // 4. HİZALAMA VE GERİ SAYIM KONTROLÜ
+            // Bileğin (wrist.x ve wrist.y) ekranın ortasındaki kılavuz kutuya girip girmediğini kontrol et
+            // Koordinatlar 0.0 ile 1.0 arasındadır. Merkez 0.5'tir.
+            const isHandInBox = (wrist.x > 0.40 && wrist.x < 0.60 && wrist.y > 0.50 && wrist.y < 0.85);
+
+            if (isHandInBox && !isCountingDown) {
+                startCountdown();
+            }
+
+            // Eğer geri sayım başladıysa, verileri tampona (buffer) kaydet ki ortalamasını alalım
+            if (isCountingDown) {
+                measurementBuffer.push({
+                    pixelDist: pixelDistance,
+                    color: hexColor
+                });
             }
         }
         canvasCtx.restore();
     }
     window.requestAnimationFrame(predictWebcam);
+}
+
+// --- YENİ: GERİ SAYIM VE OTOMATİK GEÇİŞ FONKSİYONLARI ---
+function startCountdown() {
+    isCountingDown = true;
+    measurementBuffer = []; // Önceki verileri temizle
+    
+    const overlay = document.getElementById('countdown-overlay');
+    overlay.style.display = 'flex';
+    let count = 3;
+    overlay.innerText = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            overlay.innerText = count;
+        } else {
+            clearInterval(interval);
+            overlay.style.display = 'none';
+            finalizeMeasurement();
+        }
+    }, 1000); // Her 1 saniyede (1000ms) bir çalışır
+}
+
+function finalizeMeasurement() {
+    // 3 saniye boyunca toplanan piksel mesafelerinin ortalamasını alarak titreme hatasını yok et
+    let totalPixelDist = 0;
+    measurementBuffer.forEach(data => {
+        totalPixelDist += data.pixelDist;
+    });
+    
+    const averagePixelDist = totalPixelDist / measurementBuffer.length;
+    
+    // Verileri global objemize kaydet
+    window.userData.wristPixelDistance = averagePixelDist;
+    
+    // Son okunan rengi al
+    if (measurementBuffer.length > 0) {
+        window.userData.skinColorHex = measurementBuffer[measurementBuffer.length - 1].color;
+    }
+
+    console.log("Ölçüm Kilitlendi! Ortalama Piksel:", averagePixelDist);
+    
+    // Kamerayı kapat ve otomatik olarak Trendyol Linki isteme (Asistana Sor) aşamasına geç!
+    nextStep(4); 
 }
 
 // --- EKRAN YÖNETİMİ (WIZARD) ---

@@ -164,9 +164,35 @@ window.nextStep = function(stepNumber) {
     // 4. Adıma (Sonuç) geçerken verileri topla ve API'ye at
     if (stepNumber === 4) {
         window.userData.productLink = document.getElementById('productLink').value;
-        console.log("Yapay Zekaya Gönderilecek Veriler:", window.userData);
-        document.getElementById('result-box').innerHTML = "<p>Yapay zeka saat linkini inceliyor ve bilek profilinize göre ölçümleri analiz ediyor... Lütfen bekleyin.</p>";
-        // TODO: FastAPI Backend'e fetch isteği burada atılacak
+        const resultBox = document.getElementById('result-box');
+        
+        resultBox.innerHTML = "<p>Yapay zeka saat linkini inceliyor ve bilek profilinize göre ölçümleri analiz ediyor... Lütfen bekleyin.</p>";
+        
+        // Backend'e istek at (fetch)
+        fetch('http://127.0.0.1:8000/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(window.userData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Backend'den gelen cevap:", data);
+            if(data.status === "success") {
+                resultBox.innerHTML = `
+                    <h3 style="color: #FF6B00; margin-top:0;">Analiz Tamamlandı</h3>
+                    <p><strong>Öneri:</strong> ${data.recommendation}</p>
+                    <p style="font-size: 0.85em; color: #888;">Çekilen Ürün Verisi: ${data.scraped_data.kasa_capi} / ${data.scraped_data.materyal}</p>
+                `;
+            } else {
+                resultBox.innerHTML = `<p style="color: red;">Bir hata oluştu: ${data.detail}</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+            resultBox.innerHTML = `<p style="color: red;">Sunucuya bağlanılamadı. Lütfen backend'in çalıştığından emin olun.</p>`;
+        });
     }
 
     // UI Geçişi

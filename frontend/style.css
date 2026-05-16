@@ -147,15 +147,6 @@ canvas { z-index: 2; }
     opacity: 0.8;
 }
 
-.live-stats {
-    position: absolute; bottom: 15px; left: 15px;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 10px 15px; border-radius: 10px;
-    border-left: 4px solid #FF6B00; z-index: 4;
-    text-align: left; font-size: 0.9em; font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
 .stat-item { display: flex; align-items: center; margin: 4px 0; }
 .color-box { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #CCC; margin-left: 8px; }
 
@@ -167,11 +158,67 @@ canvas { z-index: 2; }
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.countdown-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(255, 107, 0, 0.7); display: none;
-    justify-content: center; align-items: center; font-size: 8em;
-    font-weight: bold; color: white; z-index: 5;
+/* Modern El Filigranı */
+.hand-guide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 130px;
+    height: 190px;
+    z-index: 3;
+    pointer-events: none;
+}
+.hand-guide svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0px 0px 4px rgba(255, 107, 0, 0.4)); /* Hafif neon parlama */
+}
+
+/* YENİ: Durum ve Veri Paneli */
+.status-panel {
+    background-color: #FAFAFA;
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-message {
+    font-size: 1.05em;
+    font-weight: bold;
+    color: #666;
+    transition: color 0.3s;
+}
+
+.status-message.counting {
+    color: #FF6B00; /* Geri sayım yaparken turuncuya döner */
+}
+
+.live-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #333;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+}
+
+.color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #CCC;
+    margin-left: 8px;
+    background-color: #000;
 }
 
 /* 4. Adım Özet Paneli */

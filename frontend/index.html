@@ -10,63 +10,106 @@
 
     <div id="step-1" class="wizard-step active">
         <h1>Saatini Denemeden Alma</h1>
-        <p>Yapay zeka destekli sanal deneme asistanı ile beğendiğin saatin bileğinde nasıl duracağını milimetrik olarak hesapla ve gör.</p>
-        <button class="btn-primary" onclick="nextStep(2)">Hemen Hesapla</button>
+        <p>Yapay zeka destekli sanal deneme asistanı ile beğendiğin saatin bileğinde nasıl duracağını hesapla.</p>
+        <button class="btn-primary" onclick="nextStep(2)">Hemen Başla</button>
     </div>
 
     <div id="step-2" class="wizard-step">
-        <h2>Fiziksel Profilin</h2>
-        <p>Daha doğru bir analiz için temel bilgilerine ihtiyacımız var.</p>
-        <div class="input-group">
-            <label>Cinsiyet:</label>
-            <select id="gender">
-                <option value="male">Erkek</option>
-                <option value="female">Kadın</option>
-                <option value="unisex">Belirtmek İstemiyorum</option>
-            </select>
+        <h2>Ölçüm Yöntemi</h2>
+        <p>Bilek çevrenizi nasıl hesaplayalım?</p>
+        
+        <div class="method-selector">
+            <label>
+                <input type="radio" name="measureMethod" value="camera" checked onchange="toggleMethod()"> 
+                Kamera ile Akıllı Ölçüm (Önerilen)
+            </label>
+            <label>
+                <input type="radio" name="measureMethod" value="manual" onchange="toggleMethod()"> 
+                Bilek Çevremi Biliyorum
+            </label>
         </div>
-        <div class="input-group">
-            <label>Boy (cm):</label>
-            <input type="number" id="height" placeholder="175">
+
+        <div id="camera-params">
+            <div class="input-group">
+                <label>Cinsiyet:</label>
+                <select id="gender">
+                    <option value="male">Erkek</option>
+                    <option value="female">Kadın</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Boy (cm):</label>
+                <input type="number" id="height" placeholder="175">
+            </div>
+            <div class="input-group">
+                <label>Kilo (kg):</label>
+                <input type="number" id="weight" placeholder="70">
+            </div>
         </div>
-        <div class="input-group">
-            <label>Kilo (kg):</label>
-            <input type="number" id="weight" placeholder="70">
+
+        <div id="manual-params" style="display: none;">
+            <div class="input-group">
+                <label>Bilek Çevreniz (cm):</label>
+                <input type="number" id="manual-wrist" placeholder="Örn: 16.5" step="0.1">
+            </div>
         </div>
+
         <button class="btn-secondary" onclick="nextStep(1)">Geri</button>
-        <button class="btn-primary" onclick="nextStep(3)">Kamerayı Aç ve Analiz Et</button>
+        <button class="btn-primary" onclick="proceedFromStep2()">Devam Et</button>
     </div>
 
     <div id="step-3" class="wizard-step">
         <h2>Bilek Analizi</h2>
-        <p>Lütfen bileğinizin iç kısmını ekrandaki şablona hizalayın.</p>
+        <p>Lütfen elinizi ekrandaki şablona hizalayın.</p>
         
-        <div class="camera-container" style="position: relative; overflow: hidden; border-radius: 12px;">
-            <video id="webcam" autoplay playsinline style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: cover;"></video>
-            <canvas id="output_canvas" style="position: absolute; top:0; left:0; width: 100%; height: 100%; object-fit: cover; z-index: 2;"></canvas>
+        <div class="camera-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
             
             <div id="hand-guide" class="hand-guide">
-                <div class="guide-text">Bileği Buraya Hizalayın</div>
+                <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50,120 L50,80 C50,80 30,70 30,50 L30,30 C30,25 35,25 35,30 L35,50 C35,50 40,55 40,55 L40,15 C40,10 45,10 45,15 L45,55 C45,55 50,55 50,55 L50,10 C50,5 55,5 55,10 L55,55 C55,55 60,55 60,55 L60,20 C60,15 65,15 65,20 L65,55 C65,55 70,60 75,65 C80,70 80,85 80,85 L70,120 Z" fill="none" stroke="rgba(255,107,0,0.6)" stroke-width="2" stroke-dasharray="4"/>
+                </svg>
             </div>
 
             <div id="live-stats" class="live-stats">
                 <div class="stat-item">📏 Bilek: <span id="live-wrist">--</span> cm</div>
                 <div class="stat-item">🎨 Ten: <div id="live-color-box" class="color-box"></div></div>
             </div>
-
             <div id="countdown-overlay" class="countdown-overlay">3</div>
-
             <button id="flip-camera-btn" class="flip-btn" onclick="toggleCamera()">🔄 Çevir</button>
         </div>
-        
-        <button class="btn-secondary" style="margin-top: 15px;" onclick="nextStep(2)">Geri Dön</button>
+        <button class="btn-secondary" style="margin-top: 15px;" onclick="nextStep(2)">İptal Et</button>
     </div>
 
     <div id="step-4" class="wizard-step">
-        <h2>Analiz Sonucu</h2>
-        <div id="result-box" class="result-box">
-            <p>Yapay zeka verileri işliyor...</p>
+        <h2>Analiz Edilecek Veriler</h2>
+        
+        <div class="result-summary">
+            <div class="summary-item">
+                <span>Bilek Çevresi:</span>
+                <strong id="summary-wrist">--</strong>
+            </div>
+            <div class="summary-item" id="summary-color-wrapper">
+                <span>Ten Rengi:</span>
+                <div id="summary-color" class="color-box" style="width: 24px; height: 24px;"></div>
+            </div>
         </div>
+
+        <div class="input-group" style="margin-top: 25px;">
+            <label style="color: #FF6B00; font-weight: bold;">Trendyol Ürün Linkini Yapıştırın:</label>
+            <input type="text" id="productLink" placeholder="https://www.trendyol.com/...">
+        </div>
+
+        <button class="btn-secondary" onclick="nextStep(2)">Baştan Başla</button>
+        <button class="btn-primary" onclick="nextStep(5)">Yapay Zeka İle Analiz Et</button>
+    </div>
+
+    <div id="step-5" class="wizard-step">
+        <h2>Yapay Zeka Analizi</h2>
+        <div id="result-box" class="result-box">
+            <p>Model özellikleri çekiliyor ve uyumluluk hesaplanıyor...</p>
+            </div>
         <button class="btn-primary" onclick="nextStep(1)">Yeni Saat Dene</button>
     </div>
 

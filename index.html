@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanal Deneme (VTO) - Akıllı Saat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="step-1" class="wizard-step active">
+        <h1>Saatini Denemeden Alma</h1>
+        <p>Yapay zeka destekli sanal deneme asistanı ile beğendiğin saatin bileğinde nasıl duracağını milimetrik olarak hesapla ve gör.</p>
+        <button class="btn-primary" onclick="nextStep(2)">Hemen Hesapla</button>
+    </div>
+
+    <div id="step-2" class="wizard-step">
+        <h2>Fiziksel Profilin</h2>
+        <p>Daha doğru bir analiz için temel bilgilerine ihtiyacımız var.</p>
+        <div class="input-group">
+            <label>Cinsiyet:</label>
+            <select id="gender">
+                <option value="male">Erkek</option>
+                <option value="female">Kadın</option>
+                <option value="unisex">Belirtmek İstemiyorum</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Boy (cm):</label>
+            <input type="number" id="height" placeholder="175">
+        </div>
+        <div class="input-group">
+            <label>Kilo (kg):</label>
+            <input type="number" id="weight" placeholder="70">
+        </div>
+        <button class="btn-secondary" onclick="nextStep(1)">Geri</button>
+        <button class="btn-primary" onclick="nextStep(3)">Kamerayı Aç ve Analiz Et</button>
+    </div>
+
+    <div id="step-3" class="wizard-step">
+        <h2>Bilek Analizi</h2>
+        <p>Lütfen elinizi kameraya gösterin.</p>
+        <div class="camera-container">
+            <div id="camera-placeholder">Kamera Akışı Bekleniyor...</div>
+        </div>
+        <div class="input-group" style="margin-top: 20px;">
+            <label>Trendyol Ürün Linki:</label>
+            <input type="text" id="productLink" placeholder="https://www.trendyol.com/...">
+        </div>
+        <button class="btn-secondary" onclick="nextStep(2)">Geri</button>
+        <button class="btn-primary" onclick="nextStep(4)">Asistana Sor</button>
+    </div>
+
+    <div id="step-4" class="wizard-step">
+        <h2>Analiz Sonucu</h2>
+        <div id="result-box" class="result-box">
+            <p>Yapay zeka verileri işliyor...</p>
+        </div>
+        <button class="btn-primary" onclick="nextStep(1)">Yeni Saat Dene</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

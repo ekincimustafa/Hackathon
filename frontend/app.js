@@ -203,18 +203,20 @@ function startCountdown() {
     isCountingDown = true;
     measurementBuffer = []; 
     
-    const overlay = document.getElementById('countdown-overlay');
-    overlay.style.display = 'flex';
+    const statusMsg = document.getElementById('status-message');
+    statusMsg.classList.add('counting'); // Turuncu renk efekti verir
+    
     let count = 3;
-    overlay.innerText = count;
+    statusMsg.innerText = `Ölçüm ayarlandı, sabit durun: ${count}`;
 
     countdownInterval = setInterval(() => {
         count--;
         if (count > 0) {
-            overlay.innerText = count;
+            statusMsg.innerText = `Ölçüm ayarlandı, sabit durun: ${count}`;
         } else {
             clearInterval(countdownInterval);
-            overlay.style.display = 'none';
+            statusMsg.classList.remove('counting');
+            statusMsg.innerText = "Ölçüm tamamlandı, işleniyor...";
             finalizeMeasurement();
         }
     }, 1000);
@@ -223,7 +225,11 @@ function startCountdown() {
 function cancelCountdown() {
     isCountingDown = false;
     clearInterval(countdownInterval);
-    document.getElementById('countdown-overlay').style.display = 'none';
+    
+    const statusMsg = document.getElementById('status-message');
+    statusMsg.classList.remove('counting');
+    statusMsg.innerText = "El hizalaması bekleniyor...";
+    
     console.log("El hizadan çıktı, ölçüm iptal edildi.");
 }
 

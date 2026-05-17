@@ -380,11 +380,11 @@ window.nextStep = function(stepNumber) {
                 let statusText = "HESAPLANIYOR";
                 let statusColor = "#fff";
 
-                if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#F44336"; }
-                else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#FF9800"; }
-                else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#FFEB3B"; }
-                else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#8BC34A"; }
-                else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#4CAF50"; }
+                if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#666666"; }
+                else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#888888"; }
+                else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#AAAAAA"; }
+                else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#DDDDDD"; }
+                else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#FFFFFF"; }
 
                 document.getElementById('match-status-text').innerText = statusText;
                 document.getElementById('match-status-text').style.color = statusColor;
@@ -395,8 +395,17 @@ window.nextStep = function(stepNumber) {
                     else seg.style.background = "#333";
                 });
 
-                // 3. Kısa ve Renkli Yapay Zeka Yorumu
+                // 3. Yapay Zeka Yorumunu Bas
                 document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
+
+                // 4. Alternatif Önerileri Bas
+                if (stylist.recommendations && stylist.recommendations.length > 0) {
+                    document.getElementById('ai-recs-container').style.display = 'block';
+                    const recsHtml = stylist.recommendations.map(rec => `<span class="rec-tag">${rec}</span>`).join('');
+                    document.getElementById('ai-rec-tags').innerHTML = recsHtml;
+                } else {
+                    document.getElementById('ai-recs-container').style.display = 'none';
+                }
 
                 // 4. EFSANE 3D HOLOGRAM / TILT ETKİSİ
                 const tiltContainer = document.getElementById('tilt-container');

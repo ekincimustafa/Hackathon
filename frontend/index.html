@@ -110,11 +110,36 @@
     </div>
 
     <div id="step-5" class="wizard-step">
-        <h2>Yapay Zeka Analizi</h2>
-        <div id="result-box" class="result-box">
-            <p>Model özellikleri çekiliyor ve uyumluluk hesaplanıyor...</p>
+        <h2>Sanal Deneme Sonucu</h2>
+        
+        <div id="ai-loading" class="ai-loading-container">
+            <div class="spinner"></div>
+            <p id="loading-text">Otonom ajanlar verileri işliyor...</p>
+        </div>
+        
+        <div id="ai-results" style="display: none;">
+            <div class="score-container">
+                <div class="score-circle" id="match-score-circle">
+                    <span id="match-score-text">%--</span>
+                </div>
+                <p class="score-label">Uyumluluk Skoru</p>
             </div>
-        <button class="btn-primary" onclick="nextStep(1)">Yeni Saat Dene</button>
+
+            <div class="specs-card">
+                <h4>Saat Özellikleri</h4>
+                <div class="specs-grid" id="final-watch-specs">
+                    </div>
+            </div>
+
+            <div class="ai-comment-box">
+                <h4>✨ Yapay Zeka Stilist Yorumu</h4>
+                <p id="ai-stylist-comment">Bekleniyor...</p>
+            </div>
+        </div>
+        
+        <div id="error-container" style="display: none; margin-top: 20px;"></div>
+
+        <button class="btn-primary" style="margin-top: 25px;" onclick="nextStep(1)">Yeni Saat Dene</button>
     </div>
 
     <script type="module" src="app.js"></script>

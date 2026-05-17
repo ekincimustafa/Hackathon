@@ -109,40 +109,47 @@
         <button class="btn-primary" onclick="nextStep(5)">Yapay Zeka İle Analiz Et</button>
     </div>
 
-    <div id="step-5" class="wizard-step">
-        <h2>Sanal Deneme Sonucu</h2>
+    <div id="step-5" class="wizard-step futuristic-dashboard">
+        <h2 class="cyber-title">SİSTEM ANALİZİ TAMAMLANDI</h2>
         
         <div id="ai-loading" class="ai-loading-container">
             <div class="spinner"></div>
-            <p id="loading-text">Otonom ajanlar verileri işliyor...</p>
+            <p id="loading-text">Biyometrik verileriniz işleniyor...</p>
         </div>
         
-        <div id="ai-results" style="display: none;" class="result-layout">
+        <div id="ai-results" style="display: none;" class="cyber-layout">
             
-            <div class="watch-image-container">
-                <img id="scraped-watch-image" src="" alt="Seçilen Saat">
+            <div class="cyber-image-panel" id="tilt-container">
+                <img id="scraped-watch-image" src="" alt="Saat">
+                <div class="cyber-glow"></div>
             </div>
 
-            <div class="ai-analysis-container">
-                <div class="score-container">
-                    <div class="score-circle" id="match-score-circle">
-                        <span id="match-score-text">%--</span>
+            <div class="cyber-data-panel">
+                
+                <div class="segment-container">
+                    <div class="segment-labels">
+                        <span>Zayıf</span>
+                        <span id="match-status-text" style="color: #FF6B00; font-weight: bold; font-size: 1.2em;">--</span>
+                        <span>Mükemmel</span>
                     </div>
-                    <p class="score-label">Uyumluluk Skoru</p>
+                    <div class="segment-bar">
+                        <div class="segment" id="seg-1"></div>
+                        <div class="segment" id="seg-2"></div>
+                        <div class="segment" id="seg-3"></div>
+                        <div class="segment" id="seg-4"></div>
+                        <div class="segment" id="seg-5"></div>
+                    </div>
                 </div>
 
-                <div class="ai-comment-box">
-                    <h4>✨ Yapay Zeka Stilist</h4>
-                    <p id="ai-stylist-comment">
-                        <span class="typing-indicator">Analiz ediliyor<span>.</span><span>.</span><span>.</span></span>
-                    </p>
+                <div class="cyber-comment-box">
+                    <p id="ai-stylist-comment"></p>
                 </div>
+
+                <button class="btn-cyber" onclick="nextStep(1)">YENİ TARAMA BAŞLAT</button>
             </div>
         </div>
         
         <div id="error-container" style="display: none; margin-top: 20px;"></div>
-
-        <button class="btn-primary" style="margin-top: 25px;" onclick="nextStep(1)">Yeni Saat Dene</button>
     </div>
 
     <script type="module" src="app.js"></script>

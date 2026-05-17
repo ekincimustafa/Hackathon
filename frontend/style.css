@@ -247,3 +247,64 @@ canvas { z-index: 2; }
     background-color: #FAFAFA; padding: 20px; border-radius: 12px;
     border-left: 4px solid #FF6B00; text-align: left; margin-bottom: 20px;
 }
+
+/* --- 5. ADIM UI TASARIMLARI VE ANİMASYONLAR --- */
+
+/* Yükleme Animasyonu */
+.ai-loading-container {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #FF6B00;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Uyumluluk Skoru */
+.score-container { margin: 20px 0; }
+.score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(#FF6B00 0%, #EAEAEA 0%); /* JS ile dereceyi değiştireceğiz */
+    display: flex; justify-content: center; align-items: center;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.2);
+    position: relative;
+}
+.score-circle::before {
+    content: ""; position: absolute;
+    width: 85px; height: 85px;
+    background-color: white; border-radius: 50%;
+}
+#match-score-text {
+    position: relative; z-index: 1;
+    font-size: 1.8em; font-weight: bold; color: #333;
+}
+.score-label { font-size: 0.9em; color: #666; font-weight: 600; margin-top: 10px; }
+
+/* Özellik Kartı */
+.specs-card {
+    background-color: #FAFAFA; border: 1px solid #EAEAEA;
+    border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left;
+}
+.specs-card h4 { margin-top: 0; color: #444; border-bottom: 1px solid #EEE; padding-bottom: 8px; margin-bottom: 10px; }
+.specs-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em;
+}
+
+/* AI Yorum Kutusu */
+.ai-comment-box {
+    background: linear-gradient(135deg, #FFF5EB 0%, #FFFFFF 100%);
+    border-left: 4px solid #FF6B00; border-radius: 8px;
+    padding: 15px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.ai-comment-box h4 { margin-top: 0; color: #FF6B00; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+.ai-comment-box p { margin: 0; font-size: 0.95em; color: #444; line-height: 1.6; }

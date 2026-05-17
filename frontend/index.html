@@ -127,10 +127,9 @@
             <div class="cyber-data-panel">
                 
                 <div class="segment-container">
-                    <div class="segment-labels">
-                        <span>Zayıf</span>
-                        <span id="match-status-text" style="color: #FF6B00; font-weight: bold; font-size: 1.2em;">--</span>
-                        <span>Mükemmel</span>
+                    <div class="match-header">
+                        <span class="match-title">Ergonomik Analiz Sonucu</span>
+                        <span id="match-status-text" style="color: #FF6B00;">--</span>
                     </div>
                     <div class="segment-bar">
                         <div class="segment" id="seg-1"></div>
@@ -139,10 +138,20 @@
                         <div class="segment" id="seg-4"></div>
                         <div class="segment" id="seg-5"></div>
                     </div>
+                    <div class="segment-labels">
+                        <span>Zayıf Uyum</span>
+                        <span>Mükemmel Uyum</span>
+                    </div>
                 </div>
 
                 <div class="cyber-comment-box">
                     <p id="ai-stylist-comment"></p>
+                    
+                    <div class="ai-recommendations" id="ai-recs-container" style="display: none;">
+                        <h5>Sizin İçin Geliştirilen Alternatif Rotalar:</h5>
+                        <div class="rec-tags" id="ai-rec-tags">
+                            </div>
+                    </div>
                 </div>
 
                 <button class="btn-cyber" onclick="nextStep(1)">YENİ TARAMA BAŞLAT</button>

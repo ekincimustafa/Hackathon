@@ -366,19 +366,30 @@ window.nextStep = function(stepNumber) {
             } 
             else if (data.status === "success") {
                 // VERİLER GELDİ! Yenilenen arayüzü gösterelim
-                document.getElementById('ai-results').style.display = 'flex'; // block yerine flex yaptık
+                document.getElementById('ai-results').style.display = 'flex'; 
                 const watch = data.scraped_data;
+                const stylist = data.stylist_data; // Backend'den gelen yeni stilist JSON'u
                 
-                // Arka planda çekilen verileri konsola bas (Jüri veya log için)
-                console.log("Arka Planda Tutulan Kasa Çapı:", watch.kasa_capi);
-                
-                // Sadece resmi ekrana yansıt (Resim yoksa varsayılan bir görsel koy)
+                // 1. Resmi Yerleştir
                 const imgElement = document.getElementById('scraped-watch-image');
                 imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/200x200?text=Saat+Gorseli";
 
-                // Yapay zeka henüz çalışmadığı için bekleme animasyonunu aktif tutuyoruz
-                document.getElementById('match-score-text').innerText = "AI...";
-                document.getElementById('ai-stylist-comment').innerHTML = '<span class="typing-indicator">Bilek anatomisi ve saat tasarımı eşleştiriliyor<span>.</span><span>.</span><span>.</span></span>';
+                // 2. Skoru Renge Göre Dinamik Çiz (Conic Gradient)
+                const score = stylist.match_score;
+                let circleColor = "#4CAF50"; // Yeşil (Mükemmel Uyum)
+                if(score < 50) circleColor = "#F44336"; // Kırmızı (Uyumsuz)
+                else if(score < 75) circleColor = "#FF9800"; // Turuncu (Orta)
+
+                const circle = document.getElementById('match-score-circle');
+                const scoreText = document.getElementById('match-score-text');
+                
+                // Havalı bir dairesel dolum efekti
+                circle.style.background = `conic-gradient(${circleColor} ${score}%, #EAEAEA ${score}%)`;
+                scoreText.innerText = `%${score}`;
+                scoreText.style.color = circleColor;
+
+                // 3. Yapay Zeka Yorumunu Bas
+                document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
             }
         })
         .catch(error => {

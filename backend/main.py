@@ -168,15 +168,16 @@ async def analyze_watch(data: AnalysisRequest):
     KULLANICI: Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
     SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
 
-    KURALLAR (KESİNLİKLE UYGULA):
-    1. ÇOK KISA ve VURUCU ol. Maksimum 2 veya 3 cümle kur. Uzun paragraflar ve boş laflar YASAK.
-    2. Kullanıcıya net bir stil hapı ver. (Örn: "40mm çap, 16cm bileğiniz için kusursuz bir denge merkezi.")
-    3. Metni HTML olarak döndür. Vurgulamak istediğin önemli kelimeleri (Örn: mükemmel uyum, maskülen, agresif) fütüristik turuncu renk ile (<span style='color: #FF6B00; font-weight: bold;'>) belirginleştir.
+    KURALLAR:
+    1. YORUM: Kullanıcıya 3-4 cümlelik tatmin edici, teknik (ergonomi ve renk uyumu) ama çok şık bir stil analizi yaz.
+    2. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
+    3. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine ve tenine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI (Marka değil, stil ve ölçü) belirle (Örn: "38mm Koyu Kadranlı Titanyum Kasa", "36mm Klasik Dress Watch").
     
     ÇIKTI FORMATI (SADECE JSON):
     {{
         "match_score": <10 ile 100 arası>,
-        "stylist_comment": "<Sadece 2 cümlelik, renkli HTML metin>"
+        "stylist_comment": "<Detaylı ve vurgulu HTML metin>",
+        "recommendations": ["<Öneri 1>", "<Öneri 2>"]
     }}
     """
 

@@ -331,18 +331,12 @@ window.nextStep = function(stepNumber) {
             return; 
         }
 
-        const resultBox = document.getElementById('result-box');
-        
-        // Çok şık bir CSS yükleme animasyonu
-        resultBox.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #FF6B00; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
-                <p style="margin-top: 15px; color: #FF6B00; font-weight: bold;">Otonom ajanlar saat özelliklerini inceliyor...</p>
-                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-            </div>
-        `;
+        // UI Hazırlıkları (Önce yükleme animasyonunu aç, diğerlerini gizle)
+        document.getElementById('ai-loading').style.display = 'flex';
+        document.getElementById('ai-results').style.display = 'none';
+        document.getElementById('error-container').style.display = 'none';
+        document.getElementById('loading-text').innerText = "Otonom ajanlar saat özelliklerini inceliyor...";
 
-        // Backend API'ye (main.py) İstek Atıyoruz
         fetch('http://127.0.0.1:8000/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -350,45 +344,54 @@ window.nextStep = function(stepNumber) {
         })
         .then(response => response.json())
         .then(data => {
-            console.log("Backend'den Gelen Yanıt:", data);
+            console.log("Backend Yanıtı:", data);
+            document.getElementById('ai-loading').style.display = 'none'; // Yüklemeyi gizle
 
-            // DURUM 1: Site bizi engelledi, kullanıcıdan manuel çap istiyoruz (Plan B2)
+            const errorContainer = document.getElementById('error-container');
+
             if (data.status === "manual_input_needed") {
-                resultBox.innerHTML = `
-                    <h3 style="color: #FF6B00; margin-top:0;">🛡️ Güvenlik Duvarı Aşılamadı</h3>
+                // Güvenlik duvarı aşılamadıysa Manuel Seçim Ekranı (Plan B2)
+                errorContainer.style.display = 'block';
+                errorContainer.innerHTML = `
+                    <h4 style="color: #FF6B00; margin-top:0;">🛡️ Güvenlik Duvarı Aşılamadı</h4>
                     <p style="color: #666; font-size: 0.95em;">${data.message}</p>
-                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
                         <button class="btn-secondary" onclick="submitManualSize('36mm')">36mm</button>
                         <button class="btn-secondary" onclick="submitManualSize('38mm')">38mm</button>
                         <button class="btn-secondary" onclick="submitManualSize('40mm')">40mm</button>
                         <button class="btn-secondary" onclick="submitManualSize('42mm')">42mm</button>
                         <button class="btn-secondary" onclick="submitManualSize('44mm')">44mm</button>
-                        <button class="btn-secondary" onclick="submitManualSize('46mm')">46mm</button>
                     </div>
                 `;
             } 
-            // DURUM 2: Veri başarıyla çekildi (Plan A veya B1)
             else if (data.status === "success") {
+                // VERİLER GELDİ! Yenilenen arayüzü gösterelim
+                document.getElementById('ai-results').style.display = 'block';
                 const watch = data.scraped_data;
-                resultBox.innerHTML = `
-                    <h3 style="color: #4CAF50; margin-top:0;">✅ Saat Özellikleri Çıkarıldı</h3>
-                    <div class="result-summary" style="margin-top: 15px;">
-                        <div class="summary-item"><span>Kasa Çapı:</span> <strong>${watch.kasa_capi}</strong></div>
-                        <div class="summary-item"><span>Materyal:</span> <strong>${watch.materyal}</strong></div>
-                        <div class="summary-item"><span>Renk:</span> <strong>${watch.renk}</strong></div>
-                        <div class="summary-item"><span>Kordon:</span> <strong>${watch.kordon}</strong></div>
-                        <div class="summary-item" style="font-size: 0.8em; color: #888; justify-content: center; margin-top: 10px; border:none; padding-bottom:0;">📌 Kaynak: ${watch.kaynak}</div>
-                    </div>
-                    <p style="margin-top: 20px; font-weight: bold; color: #FF6B00;">Sonraki Adım: Gemini Stilizasyon Ajanı uyumluluğu hesaplayacak...</p>
+                
+                // Özellikleri grid içine bas
+                document.getElementById('final-watch-specs').innerHTML = `
+                    <div><strong>Kasa Çapı:</strong> ${watch.kasa_capi}</div>
+                    <div><strong>Materyal:</strong> ${watch.materyal}</div>
+                    <div><strong>Renk:</strong> ${watch.renk}</div>
+                    <div><strong>Kordon:</strong> ${watch.kordon}</div>
+                    <div style="grid-column: span 2; font-size: 0.85em; color: #888; margin-top: 5px;">📌 ${watch.kaynak}</div>
                 `;
+
+                // Şimdilik Yer Tutucu
+                document.getElementById('match-score-text').innerText = "Hesaplanıyor...";
+                document.getElementById('ai-stylist-comment').innerHTML = "<em>Yapay Zeka stil ajanı şu an devre dışı. Bir sonraki adımda bağlanacak...</em>";
             }
         })
         .catch(error => {
-            resultBox.innerHTML = `
-                <h3 style="color: red; margin-top:0;">Sunucu Hatası</h3>
-                <p>Python (FastAPI) sunucusuna ulaşılamadı. Terminalde sunucunun çalıştığından emin olun.</p>
-                <p style="font-size: 0.8em; color: #888;">${error}</p>
+            document.getElementById('ai-loading').style.display = 'none';
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `
+                <h4 style="color: red; margin-top:0;">Sunucu Hatası</h4>
+                <p>Python (FastAPI) sunucusuna ulaşılamadı. Sunucunun çalıştığından emin olun.</p>
             `;
+            console.error("Fetch Hatası:", error);
         });
     }
 

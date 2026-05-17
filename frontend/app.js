@@ -252,6 +252,7 @@ function finalizeMeasurement() {
 }
 
 // --- UI YÖNETİMİ VE EKRAN GEÇİŞLERİ ---
+// --- UI YÖNETİMİ VE EKRAN GEÇİŞLERİ ---
 window.toggleMethod = function() {
     const method = document.querySelector('input[name="measureMethod"]:checked').value;
     if (method === 'camera') {
@@ -287,7 +288,6 @@ window.proceedFromStep2 = function() {
 
 function updateSummaryScreen() {
     document.getElementById('summary-wrist').innerText = window.userData.wristRangeStr;
-    
     const colorWrapper = document.getElementById('summary-color-wrapper');
     if (window.userData.skinColorHex) {
         colorWrapper.style.display = 'flex';
@@ -297,6 +297,12 @@ function updateSummaryScreen() {
     }
 }
 
+// 5. Adımda eğer site engellerse çalışacak Dürüst UX fonksiyonu (Plan B2)
+window.submitManualSize = function(size) {
+    window.userData.manualWatchSize = size;
+    nextStep(5); // Veriyi güncelleyip aynı adıma tekrar istek atıyoruz
+};
+
 window.nextStep = function(stepNumber) {
     if (stepNumber === 3) {
         startCamera(); 
@@ -304,14 +310,73 @@ window.nextStep = function(stepNumber) {
         stopCamera(); 
     }
 
+    // ADIM 5: Backend ile El Sıkışma
     if (stepNumber === 5) {
         window.userData.productLink = document.getElementById('productLink').value;
         if (!window.userData.productLink) {
             alert("Lütfen analiz için bir saat linki yapıştırın.");
             return; 
         }
-        console.log("Yapay Zekaya Giden Veri:", window.userData);
-        // İleride buraya FastAPI fetch isteğini ekleyeceğiz
+
+        const resultBox = document.getElementById('result-box');
+        
+        // Çok şık bir CSS yükleme animasyonu
+        resultBox.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #FF6B00; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <p style="margin-top: 15px; color: #FF6B00; font-weight: bold;">Otonom ajanlar saat özelliklerini inceliyor...</p>
+                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            </div>
+        `;
+
+        // Backend API'ye (main.py) İstek Atıyoruz
+        fetch('http://127.0.0.1:8000/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(window.userData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Backend'den Gelen Yanıt:", data);
+
+            // DURUM 1: Site bizi engelledi, kullanıcıdan manuel çap istiyoruz (Plan B2)
+            if (data.status === "manual_input_needed") {
+                resultBox.innerHTML = `
+                    <h3 style="color: #FF6B00; margin-top:0;">🛡️ Güvenlik Duvarı Aşılamadı</h3>
+                    <p style="color: #666; font-size: 0.95em;">${data.message}</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                        <button class="btn-secondary" onclick="submitManualSize('36mm')">36mm</button>
+                        <button class="btn-secondary" onclick="submitManualSize('38mm')">38mm</button>
+                        <button class="btn-secondary" onclick="submitManualSize('40mm')">40mm</button>
+                        <button class="btn-secondary" onclick="submitManualSize('42mm')">42mm</button>
+                        <button class="btn-secondary" onclick="submitManualSize('44mm')">44mm</button>
+                        <button class="btn-secondary" onclick="submitManualSize('46mm')">46mm</button>
+                    </div>
+                `;
+            } 
+            // DURUM 2: Veri başarıyla çekildi (Plan A veya B1)
+            else if (data.status === "success") {
+                const watch = data.scraped_data;
+                resultBox.innerHTML = `
+                    <h3 style="color: #4CAF50; margin-top:0;">✅ Saat Özellikleri Çıkarıldı</h3>
+                    <div class="result-summary" style="margin-top: 15px;">
+                        <div class="summary-item"><span>Kasa Çapı:</span> <strong>${watch.kasa_capi}</strong></div>
+                        <div class="summary-item"><span>Materyal:</span> <strong>${watch.materyal}</strong></div>
+                        <div class="summary-item"><span>Renk:</span> <strong>${watch.renk}</strong></div>
+                        <div class="summary-item"><span>Kordon:</span> <strong>${watch.kordon}</strong></div>
+                        <div class="summary-item" style="font-size: 0.8em; color: #888; justify-content: center; margin-top: 10px; border:none; padding-bottom:0;">📌 Kaynak: ${watch.kaynak}</div>
+                    </div>
+                    <p style="margin-top: 20px; font-weight: bold; color: #FF6B00;">Sonraki Adım: Gemini Stilizasyon Ajanı uyumluluğu hesaplayacak...</p>
+                `;
+            }
+        })
+        .catch(error => {
+            resultBox.innerHTML = `
+                <h3 style="color: red; margin-top:0;">Sunucu Hatası</h3>
+                <p>Python (FastAPI) sunucusuna ulaşılamadı. Terminalde sunucunun çalıştığından emin olun.</p>
+                <p style="font-size: 0.8em; color: #888;">${error}</p>
+            `;
+        });
     }
 
     const allSteps = document.querySelectorAll('.wizard-step');

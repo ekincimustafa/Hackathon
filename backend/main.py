@@ -34,9 +34,9 @@ app.add_middleware(
 # --- 3. SİSTEM YAPILANDIRMASI (FEATURE FLAGS) ---
 DEMO_MODE = False  
 DEMO_CATALOG = {
-    "amazon.com": {"kasa_capi": "42mm", "materyal": "Paslanmaz Çelik", "renk": "Gümüş", "kordon": "Çelik", "kaynak": "Feature Flag (Demo Modu)"},
-    "trendyol.com": {"kasa_capi": "40mm", "materyal": "Alüminyum", "renk": "Siyah", "kordon": "Silikon", "kaynak": "Feature Flag (Demo Modu)"},
-    "ty.gl": {"kasa_capi": "40mm", "materyal": "Alüminyum", "renk": "Siyah", "kordon": "Silikon", "kaynak": "Feature Flag (Demo Modu)"} 
+    "amazon.com": {"kasa_capi": "42mm", "materyal": "Çelik", "renk": "Gümüş", "kordon": "Çelik", "resim_url": "https://cdn2.chrono24.com/images/uhren/26053805-7p0w8148bofk4w741p6h5l47-ExtraLarge.jpg", "kaynak": "Demo"},
+    "trendyol.com": {"kasa_capi": "40mm", "materyal": "Alüminyum", "renk": "Siyah", "kordon": "Silikon", "resim_url": "https://cdn2.chrono24.com/images/uhren/26053805-7p0w8148bofk4w741p6h5l47-ExtraLarge.jpg", "kaynak": "Demo"},
+    "ty.gl": {"kasa_capi": "40mm", "materyal": "Alüminyum", "renk": "Siyah", "kordon": "Silikon", "resim_url": "https://cdn2.chrono24.com/images/uhren/26053805-7p0w8148bofk4w741p6h5l47-ExtraLarge.jpg", "kaynak": "Demo"} 
 }
 
 # --- 4. VERİ MODELLERİ ---
@@ -110,8 +110,8 @@ def agentic_universal_scraper(url: str):
         prompt = f"""
         Aşağıdaki metin, bir e-ticaret sitesinden çekilmiş JSON-LD (Schema) verilerini ve sayfanın temizlenmiş metnini içermektedir.
         Senden istediğim bu bağlamı analiz edip, saatin fiziksel özelliklerini bulman ve aşağıdaki anahtarlara sahip JSON objesi döndürmen:
-        "kasa_capi" (örneğin: 42mm), "materyal" (örneğin: Çelik), "renk" (örneğin: Siyah), "kordon" (örneğin: Deri).
-        Eğer bir veriyi kesinlikle bulamazsan değerine "Belirtilmemiş" yaz. Sadece Kasa Çapını bulman bile yeterlidir.
+        "kasa_capi" (örneğin: 42mm), "materyal" (örneğin: Çelik), "renk" (örneğin: Siyah), "kordon" (örneğin: Deri), "resim_url" (JSON içindeki image veya fotoğraf linki).
+        Eğer bir veriyi kesinlikle bulamazsan değerine "Belirtilmemiş" yaz.
         
         Veri:
         {context}

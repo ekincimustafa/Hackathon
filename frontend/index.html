@@ -117,23 +117,26 @@
             <p id="loading-text">Otonom ajanlar verileri işliyor...</p>
         </div>
         
-        <div id="ai-results" style="display: none;">
-            <div class="score-container">
-                <div class="score-circle" id="match-score-circle">
-                    <span id="match-score-text">%--</span>
-                </div>
-                <p class="score-label">Uyumluluk Skoru</p>
+        <div id="ai-results" style="display: none;" class="result-layout">
+            
+            <div class="watch-image-container">
+                <img id="scraped-watch-image" src="" alt="Seçilen Saat">
             </div>
 
-            <div class="specs-card">
-                <h4>Saat Özellikleri</h4>
-                <div class="specs-grid" id="final-watch-specs">
+            <div class="ai-analysis-container">
+                <div class="score-container">
+                    <div class="score-circle" id="match-score-circle">
+                        <span id="match-score-text">%--</span>
                     </div>
-            </div>
+                    <p class="score-label">Uyumluluk Skoru</p>
+                </div>
 
-            <div class="ai-comment-box">
-                <h4>✨ Yapay Zeka Stilist Yorumu</h4>
-                <p id="ai-stylist-comment">Bekleniyor...</p>
+                <div class="ai-comment-box">
+                    <h4>✨ Yapay Zeka Stilist</h4>
+                    <p id="ai-stylist-comment">
+                        <span class="typing-indicator">Analiz ediliyor<span>.</span><span>.</span><span>.</span></span>
+                    </p>
+                </div>
             </div>
         </div>
         

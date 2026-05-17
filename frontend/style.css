@@ -308,3 +308,19 @@ canvas { z-index: 2; }
 }
 .ai-comment-box h4 { margin-top: 0; color: #FF6B00; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
 .ai-comment-box p { margin: 0; font-size: 0.95em; color: #444; line-height: 1.6; }
+
+/* Yeni Sonuç Ekranı Düzeni */
+.result-layout { display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap; text-align: center; }
+.watch-image-container { 
+    flex: 1; min-width: 150px; background: #fff; padding: 15px; 
+    border-radius: 16px; border: 1px solid #EAEAEA; display: flex; 
+    justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+.watch-image-container img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
+.ai-analysis-container { flex: 1.5; min-width: 200px; display: flex; flex-direction: column; gap: 15px; }
+
+/* Yazıyor (Typing) Animasyonu */
+.typing-indicator span { animation: blink 1.4s infinite both; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }

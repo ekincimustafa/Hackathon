@@ -1,12 +1,29 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-import uvicorn
-import requests
-from bs4 import BeautifulSoup
 import google.generativeai as genai
 import json
 import re
+import os
+import uvicorn
+import requests
+import cloudscraper
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from bs4 import BeautifulSoup
+from duckduckgo_search import DDGS
+from dotenv import load_dotenv
+
+
+# Gizli .env dosyasındaki verileri sisteme yükle
+load_dotenv()
+
+# API Key'i çevre değişkeninden güvenli bir şekilde çek
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Eğer anahtar bulunamazsa sistemi uyararak durdur (Güvenlik önlemi)
+if not GEMINI_API_KEY:
+    raise ValueError("KRİTİK HATA: GEMINI_API_KEY .env dosyasında bulunamadı!")
+
+genai.configure(api_key=GEMINI_API_KEY)
 
 # --- UYGULAMA VE YAPAY ZEKA KURULUMU ---
 app = FastAPI(title="VTO Sanal Deneme API", version="1.0")
@@ -19,13 +36,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: Hackathon öncesi gerçek Gemini API anahtarını buraya eklemelisin
-GEMINI_API_KEY = "BURAYA_API_ANAHTARINI_YAZ"
-genai.configure(api_key=GEMINI_API_KEY)
-
 # Gemini'ın sadece JSON formatında, makine okuyabilir yanıt vermesini zorluyoruz
 generation_config = {"response_mime_type": "application/json"}
 scraping_agent = genai.GenerativeModel('gemini-1.5-flash', generation_config=generation_config)
+
+# Sunum anında veya testlerde risk almamak için Feature Flag
+DEMO_MODE = True  
+DEMO_CATALOG = {
+    "amazon.com": {"kasa_capi": "42mm", "materyal": "Paslanmaz Çelik", "renk": "Gümüş", "kordon": "Çelik", "kaynak": "Feature Flag (Demo Modu)"},
+    "trendyol.com": {"kasa_capi": "40mm", "materyal": "Alüminyum", "renk": "Siyah", "kordon": "Silikon", "kaynak": "Feature Flag (Demo Modu)"}
+}
 
 # --- VERİ MODELLERİ ---
 class AnalysisRequest(BaseModel):
@@ -66,60 +86,56 @@ def extract_from_url(url: str):
     return None
 
 def agentic_universal_scraper(url: str):
-    """
-    PLAN A (Otonom Madenci): Siteye gider, ham HTML metnini alır ve Gemini'a JSON olarak ayıklatır.
-    """
-    print(f"\n[Ajan A] Hedef siteye gidiliyor: {url}")
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-    }
+    print(f"\n[Ajan A] İşlem başlatıldı: {url}")
+    clean_url = url.split('?')[0].split('/ref=')[0]
+
+    # 1. Feature Flag (Demo Modu) Kontrolü
+    if DEMO_MODE:
+        print("[Ajan A] DEMO_MODE aktif. Yerel katalog kontrol ediliyor...")
+        for key, data in DEMO_CATALOG.items():
+            if key in clean_url:
+                print("[Ajan A] Demo verisi başarıyla yüklendi.")
+                return data
+
+    # 2. Jina Reader API (Yeni Nesil LLM Kazıyıcı)
+    print("[Ajan A] Jina Reader API ile siteye erişiliyor...")
+    jina_url = f"https://r.jina.ai/{clean_url}"
 
     try:
-        response = requests.get(url, headers=headers, timeout=8)
-        
-        # Anti-Bot Korumasına Takılırsak Plan B1'e geç
-        if response.status_code != 200:
-            print(f"[Ajan A] Site botu engelledi (HTTP {response.status_code}). B1 Planına geçiliyor...")
-            return extract_from_url(url)
+        # Jina API'ye istek atıyoruz
+        response = requests.get(jina_url, timeout=15)
 
-        # BS4 ile DOM'u temizle ve sadece metni al
-        soup = BeautifulSoup(response.content, "html.parser")
-        for script in soup(["script", "style", "footer", "header", "nav"]):
-            script.extract()
+        if response.status_code == 200 and len(response.text) > 100:
+            optimized_text = response.text[:4000]
+
+            if GEMINI_API_KEY == "BURAYA_API_ANAHTARINI_YAZ":
+                print("[Ajan Uyarısı] Gerçek Gemini API Anahtarı eksik. B1 Planına geçiliyor...")
+                return extract_from_url(url)
+
+            prompt = f"""
+            Aşağıdaki metin, Jina Reader ile çekilmiş bir e-ticaret sayfasıdır. 
+            Senden istediğim bu metni analiz edip, saatin fiziksel özelliklerini bulman ve aşağıdaki anahtarlara sahip JSON objesi döndürmen:
+            "kasa_capi" (örneğin: 42mm), "materyal" (örneğin: Çelik), "renk" (örneğin: Siyah), "kordon" (örneğin: Deri).
+            Eğer bir veriyi metinde bulamazsan değerine "Belirtilmemiş" yaz.
             
-        raw_text = soup.get_text(separator=" ", strip=True)
-        optimized_text = raw_text[:4000] # API Token tasarrufu için metni kırp
+            Sayfa Metni:
+            {optimized_text}
+            """
 
-        if GEMINI_API_KEY == "BURAYA_API_ANAHTARINI_YAZ":
-            print("[Ajan Uyarısı] Gerçek API Anahtarı eksik, otonom kazıma yapılamıyor. B1 Planına geçiliyor...")
+            res = scraping_agent.generate_content(prompt)
+            clean_json_str = res.text.replace('```json', '').replace('```', '').strip()
+            extracted_data = json.loads(clean_json_str)
+            extracted_data["kaynak"] = "Jina Reader + Gemini AI"
+            
+            print(f"[Ajan A] Veri başarıyla ayıklandı: {extracted_data}")
+            return extracted_data
+            
+        else:
+            print(f"[Ajan A] Jina Reader başarısız oldu (HTTP {response.status_code}). B1 Planına geçiliyor...")
             return extract_from_url(url)
-
-        # Gemini Veri Çıkarma Komutu
-        prompt = f"""
-        Aşağıdaki karmaşık web sitesi metninin içinde bir saat satılmaktadır. 
-        Senden istediğim bu metni analiz edip, saatin fiziksel özelliklerini bulman ve aşağıdaki anahtarlara sahip JSON objesi döndürmen:
-        "kasa_capi" (örneğin: 42mm), "materyal" (örneğin: Çelik), "renk" (örneğin: Siyah), "kordon" (örneğin: Deri).
-        Eğer bir veriyi metinde bulamazsan değerine "Belirtilmemiş" yaz. Sadece Kasa Çapını bulman bile yeterlidir.
-        
-        Web Sitesi Metni:
-        {optimized_text}
-        """
-
-        print("[Ajan A] Yapay zeka metin yığınını analiz ediyor...")
-        res = scraping_agent.generate_content(prompt)
-        
-        # Gemini'dan dönen metin markdown backtick'leri (```json ... ```) içeriyorsa temizle
-        clean_json_str = res.text.replace('```json', '').replace('```', '').strip()
-        extracted_data = json.loads(clean_json_str)
-        extracted_data["kaynak"] = "Gemini AI (Plan A)"
-        
-        print(f"[Ajan A] Veri başarıyla ayıklandı: {extracted_data}")
-        return extracted_data
 
     except Exception as e:
-        print(f"[Ajan A] Beklenmeyen Hata ({e}). B1 Planına geçiliyor...")
+        print(f"[Ajan A] Bağlantı Hatası ({e}). B1 Planına geçiliyor...")
         return extract_from_url(url)
 
 # --- ANA API ENDPOINT'İ ---

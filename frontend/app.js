@@ -73,7 +73,20 @@ async function startCamera() {
             predictWebcam();
         });
     } catch (error) {
-        console.error("Kamera açılamadı:", error);
+        console.error("Kamera açılamadı veya izin reddedildi:", error);
+        
+        // Zarif Çöküş (Graceful Degradation): Kameraya ulaşılamazsa manuel metoda zorla
+        alert("Kamera izni reddedildi veya cihazınızda kamera bulunamadı. Lütfen ölçünüzü manuel olarak giriniz.");
+        
+        // UI'daki radyo butonunu manuel olarak işaretle
+        document.querySelector('input[value="manual"]').checked = true;
+        window.toggleMethod(); 
+        
+        // Sistemi hemen Adım 2'ye (Manuel Parametreler) geri döndür
+        stopCamera();
+        const allSteps = document.querySelectorAll('.wizard-step');
+        allSteps.forEach(step => step.classList.remove('active'));
+        document.getElementById('step-2').classList.add('active');
     }
 }
 

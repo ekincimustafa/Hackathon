@@ -157,10 +157,59 @@ async def analyze_watch(data: AnalysisRequest):
             "message": "Güvenlik duvarları nedeniyle saatin ölçülerini otomatik okuyamadık. Analiz için lütfen kasa çapını aşağıdan seçin."
         }
 
+    # =========================================================================
+    # YENİ EKLENEN KISIM: GEMİNİ STİLİZASYON (UYUMLULUK) AJANI BURADA BAŞLIYOR
+    # =========================================================================
+    print("\n[Stilist Ajan] Yapay Zeka kişiselleştirilmiş moda yorumu üretiyor...")
+    
+    prompt_stylist = f"""
+    Sen lüks saatler, ergonomi ve renk teorisi konusunda uzman, empati yeteneği yüksek bir Yapay Zeka Stil Danışmanısın.
+    Aşağıdaki kullanıcı verileri ile seçilen saat özelliklerini analiz ederek bir "Uyumluluk Skoru" ve profesyonel bir geri bildirim üreteceksin.
+
+    KULLANICI ANATOMİSİ:
+    - Cinsiyet: {data.gender}
+    - Bilek Çevresi Aralığı: {data.wristRangeStr}
+    - Ten Rengi (Hex Kodu): {data.skinColorHex}
+
+    SEÇİLEN SAAT:
+    - Kasa Çapı: {watch_features.get('kasa_capi', 'Bilinmiyor')}
+    - Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
+    - Renk: {watch_features.get('renk', 'Bilinmiyor')}
+    - Kordon: {watch_features.get('kordon', 'Bilinmiyor')}
+
+    ANALİZ KURALLARI (Kesinlikle Uygula):
+    1. Ergonomi: 15-17 cm arası bilekler için 36-40mm idealdir. Eğer bilek ince ve saat 42mm+ ise, saatin optik olarak büyük duracağını nazikçe belirt.
+    2. Renk Teorisi: Koyu/Esmer tenler altın ve siyah tonlarını; açık tenler ise çelik, gümüş ve lacivert tonlarını mükemmel taşır. Metal ve ten uyumunu değerlendir.
+    3. UX Ses Tonu: "Övgü-Eleştiri-Öneri" formatını kullan. Önce seçimi öv ("Harika bir seçim..."), sonra uyumsuzluk varsa bilimsel bir dille açıkla, en son alternatif fikir ver.
+    4. Yargılayıcı olma. Kullanıcıyla sohbet eden, samimi ama lüks bir marka asistanı gibi konuş.
+
+    ÇIKTI FORMATI (SADECE JSON DÖNDÜR):
+    {{
+        "match_score": <10 ile 100 arası bir tam sayı>,
+        "stylist_comment": "<HTML formatında, paragraflar için <br><br> etiketleri içeren, kalın yazılarla vurgulanmış şık bir metin>"
+    }}
+    """
+
+    try:
+        res_stylist = scraping_agent.generate_content(prompt_stylist)
+        clean_stylist_json = res_stylist.text.replace('```json', '').replace('```', '').strip()
+        stylist_data = json.loads(clean_stylist_json)
+        print(f"[Stilist Ajan] Başarılı! Skor: %{stylist_data.get('match_score')}")
+    except Exception as e:
+        print(f"[Stilist Ajan] Hata oluştu: {e}")
+        stylist_data = {
+            "match_score": 75,
+            "stylist_comment": "Saat modeliniz tarzınıza şık bir dokunuş katacaktır ancak tam uyumluluk analizi için ek görsel verilere ihtiyaç var."
+        }
+    # =========================================================================
+    # YENİ EKLENEN KISIM BURADA BİTİYOR
+    # =========================================================================
+
     return {
         "status": "success",
         "message": "Model özellikleri başarıyla işlendi.",
-        "scraped_data": watch_features
+        "scraped_data": watch_features,
+        "stylist_data": stylist_data # <--- YORUMU FRONTEND'E BURADAN GÖNDERİYORUZ
     }
 
 if __name__ == "__main__":

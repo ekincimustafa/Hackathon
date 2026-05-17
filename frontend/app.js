@@ -366,21 +366,19 @@ window.nextStep = function(stepNumber) {
             } 
             else if (data.status === "success") {
                 // VERİLER GELDİ! Yenilenen arayüzü gösterelim
-                document.getElementById('ai-results').style.display = 'block';
+                document.getElementById('ai-results').style.display = 'flex'; // block yerine flex yaptık
                 const watch = data.scraped_data;
                 
-                // Özellikleri grid içine bas
-                document.getElementById('final-watch-specs').innerHTML = `
-                    <div><strong>Kasa Çapı:</strong> ${watch.kasa_capi}</div>
-                    <div><strong>Materyal:</strong> ${watch.materyal}</div>
-                    <div><strong>Renk:</strong> ${watch.renk}</div>
-                    <div><strong>Kordon:</strong> ${watch.kordon}</div>
-                    <div style="grid-column: span 2; font-size: 0.85em; color: #888; margin-top: 5px;">📌 ${watch.kaynak}</div>
-                `;
+                // Arka planda çekilen verileri konsola bas (Jüri veya log için)
+                console.log("Arka Planda Tutulan Kasa Çapı:", watch.kasa_capi);
+                
+                // Sadece resmi ekrana yansıt (Resim yoksa varsayılan bir görsel koy)
+                const imgElement = document.getElementById('scraped-watch-image');
+                imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/200x200?text=Saat+Gorseli";
 
-                // Şimdilik Yer Tutucu
-                document.getElementById('match-score-text').innerText = "Hesaplanıyor...";
-                document.getElementById('ai-stylist-comment').innerHTML = "<em>Yapay Zeka stil ajanı şu an devre dışı. Bir sonraki adımda bağlanacak...</em>";
+                // Yapay zeka henüz çalışmadığı için bekleme animasyonunu aktif tutuyoruz
+                document.getElementById('match-score-text').innerText = "AI...";
+                document.getElementById('ai-stylist-comment').innerHTML = '<span class="typing-indicator">Bilek anatomisi ve saat tasarımı eşleştiriliyor<span>.</span><span>.</span><span>.</span></span>';
             }
         })
         .catch(error => {

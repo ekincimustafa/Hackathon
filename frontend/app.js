@@ -365,31 +365,57 @@ window.nextStep = function(stepNumber) {
                 `;
             } 
             else if (data.status === "success") {
-                // VERİLER GELDİ! Yenilenen arayüzü gösterelim
                 document.getElementById('ai-results').style.display = 'flex'; 
                 const watch = data.scraped_data;
-                const stylist = data.stylist_data; // Backend'den gelen yeni stilist JSON'u
+                const stylist = data.stylist_data; 
                 
                 // 1. Resmi Yerleştir
                 const imgElement = document.getElementById('scraped-watch-image');
-                imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/200x200?text=Saat+Gorseli";
+                imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/300x400?text=Saat+Gorseli";
 
-                // 2. Skoru Renge Göre Dinamik Çiz (Conic Gradient)
+                // 2. Skoru 5 Bölmeli Çubuğa Çevir
                 const score = stylist.match_score;
-                let circleColor = "#4CAF50"; // Yeşil (Mükemmel Uyum)
-                if(score < 50) circleColor = "#F44336"; // Kırmızı (Uyumsuz)
-                else if(score < 75) circleColor = "#FF9800"; // Turuncu (Orta)
+                const segments = document.querySelectorAll('.segment');
+                let activeSegments = 0;
+                let statusText = "HESAPLANIYOR";
+                let statusColor = "#fff";
 
-                const circle = document.getElementById('match-score-circle');
-                const scoreText = document.getElementById('match-score-text');
-                
-                // Havalı bir dairesel dolum efekti
-                circle.style.background = `conic-gradient(${circleColor} ${score}%, #EAEAEA ${score}%)`;
-                scoreText.innerText = `%${score}`;
-                scoreText.style.color = circleColor;
+                if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#F44336"; }
+                else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#FF9800"; }
+                else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#FFEB3B"; }
+                else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#8BC34A"; }
+                else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#4CAF50"; }
 
-                // 3. Yapay Zeka Yorumunu Bas
+                document.getElementById('match-status-text').innerText = statusText;
+                document.getElementById('match-status-text').style.color = statusColor;
+
+                // Çubukları yak
+                segments.forEach((seg, index) => {
+                    if (index < activeSegments) seg.style.background = statusColor;
+                    else seg.style.background = "#333";
+                });
+
+                // 3. Kısa ve Renkli Yapay Zeka Yorumu
                 document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
+
+                // 4. EFSANE 3D HOLOGRAM / TILT ETKİSİ
+                const tiltContainer = document.getElementById('tilt-container');
+                tiltContainer.addEventListener('mousemove', (e) => {
+                    const rect = tiltContainer.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // Container içindeki X pozisyonu
+                    const y = e.clientY - rect.top;  // Container içindeki Y pozisyonu
+                    
+                    // Saati farenin yönüne doğru açısal olarak eğ (Maksimum 20 derece)
+                    const xRotation = 20 * ((y - rect.height / 2) / rect.height);
+                    const yRotation = -20 * ((x - rect.width / 2) / rect.width);
+                    
+                    imgElement.style.transform = `rotateX(${xRotation}deg) rotateY(${yRotation}deg) scale(1.05)`;
+                });
+
+                tiltContainer.addEventListener('mouseleave', () => {
+                    // Fare çıkınca eski haline yumuşakça dön
+                    imgElement.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+                });
             }
         })
         .catch(error => {

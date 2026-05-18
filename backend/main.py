@@ -1,3 +1,4 @@
+import urllib.parse
 import google.generativeai as genai
 import json
 import re
@@ -8,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pydantic import BaseModel
 from bs4 import BeautifulSoup
-from curl_cffi import requests as curl_requests # YENİ SİLAHIMIZ: TLS Parmak İzi Taklitçisi
+from curl_cffi import requests as curl_requests
 from dotenv import load_dotenv
 
 # --- 1. GÜVENLİK VE API KURULUMU ---
@@ -50,6 +51,13 @@ class AnalysisRequest(BaseModel):
     productLink: str
     manualWatchSize: Optional[str] = None
 
+# EKSİK OLAN MODEL EKLENDİ!
+class AlternativeRequest(BaseModel):
+    target_style: str
+    gender: str
+    wristRangeStr: str
+    skinColorHex: str
+
 # --- 5. AKILLI ARAÇLAR ---
 def extract_from_url(url: str):
     print(f"[Ajan B1] URL analizi başlatıldı: {url}")
@@ -61,11 +69,6 @@ def extract_from_url(url: str):
     return None
 
 def agentic_universal_scraper(url: str):
-    """
-    PLAN A (curl_cffi + JSON-LD): Chrome tarayıcısının TLS parmak izini kopyalayarak
-    WAF (Cloudflare/Datadome) engellerini aşar. Sitenin Schema.org verisini ve 
-    budanmış HTML'ini LLM'e sunar.
-    """
     print(f"\n[Ajan A] İşlem başlatıldı: {url}")
     clean_url = url.split('?')[0].split('/ref=')[0]
 
@@ -73,22 +76,17 @@ def agentic_universal_scraper(url: str):
         print("[Ajan A] DEMO_MODE aktif. Yerel katalog kontrol ediliyor...")
         for key, data in DEMO_CATALOG.items():
             if key in clean_url:
-                print("[Ajan A] Demo verisi başarıyla yüklendi.")
                 return data
 
     try:
         print(f"[Ajan A] curl_cffi ile Chrome 120 taklidi yapılarak siteye sızılıyor: {clean_url}")
-        # impersonate="chrome120" parametresi ile hedef siteye %100 gerçek bir Chrome gibi el sallıyoruz
         response = curl_requests.get(clean_url, impersonate="chrome120", timeout=15)
 
         if response.status_code != 200:
             print(f"[Ajan A] Site erişimi reddetti (HTTP {response.status_code}). B1 Planına geçiliyor...")
             return extract_from_url(clean_url)
 
-        # BeautifulSoup ile DOM'u parse et
         soup = BeautifulSoup(response.content, "html.parser")
-
-        # 1. JSON-LD (Schema.org) Arama Motoru Verilerini Çıkar
         json_ld_data = []
         for script in soup.find_all("script", type="application/ld+json"):
             try:
@@ -97,15 +95,13 @@ def agentic_universal_scraper(url: str):
             except:
                 continue
 
-        # 2. HTML'i Budama (LLM Token Optimizasyonu)
         for element in soup(["script", "style", "nav", "footer", "header", "meta", "link", "svg", "path"]):
             element.extract()
         
         clean_text = soup.get_text(separator=" ", strip=True)
-        clean_text = re.sub(r'\s+', ' ', clean_text) # Fazla boşlukları sil
+        clean_text = re.sub(r'\s+', ' ', clean_text)
         optimized_text = clean_text[:4000] 
 
-        # LLM İçin Yoğunlaştırılmış Bağlam (Context)
         context = f"JSON-LD Meta Verisi:\n{json.dumps(json_ld_data)[:1500]}\n\nSayfa Metni:\n{optimized_text}"
 
         prompt = f"""
@@ -117,7 +113,6 @@ def agentic_universal_scraper(url: str):
         Veri:
         {context}
         """
-
         print("[Ajan A] Yapay zeka, JSON-LD ve Budanmış HTML'i analiz ediyor...")
         res = scraping_agent.generate_content(prompt)
         
@@ -125,12 +120,59 @@ def agentic_universal_scraper(url: str):
         extracted_data = json.loads(clean_json_str)
         extracted_data["kaynak"] = "curl_cffi + JSON-LD + Gemini AI"
         
-        print(f"[Ajan A] Veri başarıyla ayıklandı: {extracted_data}")
         return extracted_data
-
     except Exception as e:
         print(f"[Ajan A] Bağlantı/Ayrıştırma Hatası ({e}). B1 Planına geçiliyor...")
         return extract_from_url(clean_url)
+
+def trendyol_search_agent(query: str):
+    print(f"\n[Arama Ajanı] Gelen Ham İstek: {query}")
+    
+    # Özel karakterleri temizle
+    clean_query = re.sub(r'[^\w\s]', '', query)
+    words = clean_query.split()
+    
+    # --- ZIRH 1: İnsan Gibi Arama Stratejisi (Dar'dan Genişe) ---
+    search_terms = []
+    if len(words) >= 3:
+        search_terms.append(f"{words[0]} {words[1]} {words[2]} saat") # Örn: 39mm çelik spor saat
+        search_terms.append(f"{words[0]} {words[1]} saat")            # Örn: 39mm çelik saat
+        search_terms.append(f"{words[1]} saat")                       # Örn: çelik saat (Kesin bulur)
+    elif len(words) == 2:
+        search_terms.append(f"{words[0]} {words[1]} saat")
+        search_terms.append(f"{words[1]} saat")
+    else:
+        search_terms.append(f"{clean_query} saat")
+        
+    for term in search_terms:
+        print(f"[Arama Ajanı] Trendyol'da deneniyor: {term}")
+        safe_query = urllib.parse.quote_plus(term)
+        search_url = f"https://www.trendyol.com/sr?q={safe_query}"
+        
+        try:
+            response = curl_requests.get(search_url, impersonate="chrome120", timeout=15)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, "html.parser")
+                
+                # --- ZIRH 2: Class İsimlerini Boşver, Doğrudan Linki (Regex ile) Avla! ---
+                # Trendyol ürün linkleri HER ZAMAN "-p-" ve ardından ürün numarası içerir (Örn: -p-123456)
+                for a_tag in soup.find_all("a", href=True):
+                    href = a_tag["href"]
+                    if re.search(r'-p-\d+', href) and "/yorumlar" not in href:
+                        # Eğer link "http" ile başlamıyorsa, ana domaini ekle
+                        if not href.startswith("http"):
+                            href = "https://www.trendyol.com" + href
+                        
+                        print(f"[Arama Ajanı] Ürün BAŞARIYLA AVLANDI: {href}")
+                        return href # İlk bulduğu gerçek ürün linkini döndür ve savaşı bitir!
+                        
+        except Exception as e:
+            print(f"[Arama Ajanı] Ağ hatası: {e}")
+            
+        print(f"[Arama Ajanı] '{term}' kelimesiyle sonuç çıkmadı, ağ genişletiliyor...")
+        
+    print("[Arama Ajanı] Hiçbir arama stratejisi işe yaramadı.")
+    return None
 
 # --- 6. API ENDPOINT'İ ---
 @app.post("/analyze")
@@ -138,13 +180,9 @@ async def analyze_watch(data: AnalysisRequest):
     print(f"\n--- YENİ SANAL DENEME İSTEĞİ ({data.wristRangeStr} Bilek) ---")
     
     if data.manualWatchSize:
-        print(f"Kullanıcı manuel müdahalesi algılandı: {data.manualWatchSize}")
         watch_features = {
-            "kasa_capi": data.manualWatchSize,
-            "materyal": "Bilinmiyor",
-            "renk": "Bilinmiyor",
-            "kordon": "Bilinmiyor",
-            "kaynak": "Kullanıcı Manuel Girişi (Plan B2)"
+            "kasa_capi": data.manualWatchSize, "materyal": "Bilinmiyor", "renk": "Bilinmiyor",
+            "kordon": "Bilinmiyor", "kaynak": "Kullanıcı Manuel Girişi (Plan B2)"
         }
     else:
         watch_features = agentic_universal_scraper(data.productLink)
@@ -152,17 +190,12 @@ async def analyze_watch(data: AnalysisRequest):
     kasa_capi = watch_features.get("kasa_capi") if watch_features else None
     
     if not kasa_capi or kasa_capi == "Belirtilmemiş" or kasa_capi is None:
-        print("Tüm otonom veri çekme planları başarısız. Kullanıcıya danışılıyor (Plan B2)...")
         return {
             "status": "manual_input_needed",
             "message": "Güvenlik duvarları nedeniyle saatin ölçülerini otomatik okuyamadık. Analiz için lütfen kasa çapını aşağıdan seçin."
         }
 
-    # =========================================================================
-    # YENİ EKLENEN KISIM: GEMİNİ STİLİZASYON (UYUMLULUK) AJANI BURADA BAŞLIYOR
-    # =========================================================================
     print("\n[Stilist Ajan] Yapay Zeka kişiselleştirilmiş moda yorumu üretiyor...")
-    
     cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
 
     prompt_stylist = f"""
@@ -178,11 +211,10 @@ async def analyze_watch(data: AnalysisRequest):
        <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>UYUM</span> [Bilek ölçüsü ve kasa çapı uyumu üzerine tek cümle]
        <br><br>
        <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>TON</span> [Saat materyali ile doğal ten renginin alt ton uyumu üzerine tek cümle]
-       ⚠️ KRİTİK KURAL: Metin içinde KESİNLİKLE ham renk kodlarını (#DBA399 vb.) yazma! Yerine 'buğday ten', 'açık ten' gibi kelimeler kullan. JSON hatası almamak için metinde çift tırnak (") ASLA kullanma, sadece tek tırnak (') kullan. 
-    2. CİNSİYET UYARISI: Eğer kullanıcı "Kadın" ise ve seçilen saat bariz bir erkek saatiyse (örneğin 40mm üstü maskülen modeller), çıktıdaki "warning" alanına SADECE "Bu saat erkek saatidir." yaz. Başka hiçbir açıklama ekleme. Eğer kullanıcı "Erkek" ise ve seçilen saat kadın saatiyse SADECE "Bu saat kadın saatidir." yaz. Eğer cinsiyet uyumsuzluğu yoksa "warning" değerini null yap. Cinsiyet uyumsuzluğu varsa skoru (match_score) KESİNLİKLE 45'in altında tut.
-    3. VURGU: 'stylist_comment' içindeki önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
-    4. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine, tenine ve cinsiyetine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI belirle.
-    5. JSON FORMAT KORUMASI: Çıktın KESİNLİKLE geçerli bir JSON olmalıdır. Metinlerin içinde ASLA çift tırnak (") kullanma! Vurgu veya alıntı için tek tırnak (') kullan.
+    2. CİNSİYET UYARISI: Uyumsuzluk varsa 'warning' değerine sadece 'Bu saat kadın/erkek saatidir.' yaz ve match_score değerini KESİNLİKLE 45'in altında tut. Yoksa null yap.
+    3. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
+    4. ÖNERİLER: Sistemin e-ticaret sitesinde otomatik arama yapabilmesi için MAKSİMUM 3-4 KELİMELİK çok net ve kısa ARAMA KELİMELERİ belirle (Örn: '38mm çelik klasik', '40mm siyah deri', 'titanyum spor'). Kesinlikle uzun cümleler veya şiirsel betimlemeler kullanma!    
+    5. JSON KORUMASI: Metinlerde ASLA çift tırnak (") kullanma! Tek tırnak (') kullan.
     
     ÇIKTI FORMATI (SADECE JSON):
     {{
@@ -200,20 +232,55 @@ async def analyze_watch(data: AnalysisRequest):
         print(f"[Stilist Ajan] Başarılı! Skor: %{stylist_data.get('match_score')}")
     except Exception as e:
         print(f"[Stilist Ajan] Hata oluştu: {e}")
-        stylist_data = {
-            "match_score": 75,
-            "stylist_comment": "Saat modeliniz tarzınıza şık bir dokunuş katacaktır ancak tam uyumluluk analizi için ek görsel verilere ihtiyaç var."
-        }
-    # =========================================================================
-    # YENİ EKLENEN KISIM BURADA BİTİYOR
-    # =========================================================================
+        stylist_data = {"match_score": 75, "stylist_comment": "Analiz için ek görsel verilere ihtiyaç var."}
 
-    return {
-        "status": "success",
-        "message": "Model özellikleri başarıyla işlendi.",
-        "scraped_data": watch_features,
-        "stylist_data": stylist_data # <--- YORUMU FRONTEND'E BURADAN GÖNDERİYORUZ
-    }
+    return {"status": "success", "message": "Başarılı.", "scraped_data": watch_features, "stylist_data": stylist_data}
 
+# --- 7. ALTERNATİF GERÇEK ZAMANLI ARAMA ENDPOINT'İ ---
+@app.post("/simulate_alternative")
+async def simulate_alt(data: AlternativeRequest):
+    print(f"\n--- ALTERNATİF ROTA İSTEĞİ: {data.target_style} ---")
+    
+    cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
+    arama_terimi = f"{data.target_style} {cinsiyet_tr}"
+    
+    gercek_urun_linki = trendyol_search_agent(arama_terimi)
+    
+    if not gercek_urun_linki:
+        return {"status": "error", "message": "Bu tarza uygun ürün bulunamadı."}
+        
+    watch_features = agentic_universal_scraper(gercek_urun_linki)
+    
+    prompt_alt = f"""
+    Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
+    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
+    YENİ SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
+    
+    Kullanıcı "{data.target_style}" tarzına tıkladı ve ona bu gerçek saat bulundu.
+    
+    KURALLAR:
+    1. YORUM: Neden onun için KUSURSUZ bir seçim olduğunu 3-4 cümleyle anlat. 
+    2. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
+    3. SKOR: match_score KESİNLİKLE 85 ile 100 arasında olmalı.
+    4. Çift tırnak (") kullanma.
+    
+    ÇIKTI FORMATI (SADECE JSON):
+    {{
+        "match_score": <85 ile 100 arası>,
+        "warning": null,
+        "stylist_comment": "<Detaylı ve vurgulu HTML metin>",
+        "recommendations": []
+    }}
+    """
+    
+    try:
+        res = scraping_agent.generate_content(prompt_alt)
+        clean_json = res.text.replace('```json', '').replace('```', '').strip()
+        stylist_data = json.loads(clean_json)
+        return {"status": "success", "scraped_data": watch_features, "stylist_data": stylist_data}
+    except Exception as e:
+        print(f"[Ajan] Alternatif üretilirken hata: {e}")
+        return {"status": "error"}
+    
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

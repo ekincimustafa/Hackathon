@@ -144,6 +144,19 @@ async function predictWebcam() {
         if (results.landmarks && results.landmarks.length > 0 && results.worldLandmarks && results.worldLandmarks.length > 0) {
             const landmarks = results.landmarks[0];
             const worldLandmarks = results.worldLandmarks[0];
+
+            if (isHandFist(worldLandmarks)) {
+                document.getElementById('status-message').innerText = "⚠️ Lütfen elinizi düz tutun, yumruk yapmayın!";
+                document.getElementById('status-message').classList.remove('counting');
+                if (isCountingDown) cancelCountdown();
+                
+                // İskeleti kullanıcıyı görsel olarak uyarmak için KIRMIZI çiziyoruz
+                drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#FF0000", lineWidth: 4 });
+                
+                canvasCtx.restore();
+                window.requestAnimationFrame(predictWebcam);
+                return; // Kritik: Hatalı ölçüm alınmasın diye fonksiyonu burada sonlandırıyoruz!
+            }
             
             // Çizimleri kalınlaştırdık (İnce ve cılız görünme sorunu çözüldü)
             drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 4 });
@@ -455,3 +468,39 @@ window.nextStep = function(stepNumber) {
     const targetStep = document.getElementById(`step-${stepNumber}`);
     if (targetStep) targetStep.classList.add('active');
 };
+
+// --- YUMRUK ALGILAMA FİLTRESİ ---
+function isHandFist(worldLandmarks) {
+    // Parmak Uçları: İşaret(8), Orta(12), Yüzük(16), Serçe(20)
+    const fingerTips = [8, 12, 16, 20];
+    // Parmak Kök Eklemleri (MCP): İşaret(5), Orta(9), Yüzük(13), Serçe(17)
+    const fingerBases = [5, 9, 13, 17];
+    
+    let closedFingersCount = 0;
+    const wrist = worldLandmarks[0]; // Bilek referans noktası
+
+    for (let i = 0; i < 4; i++) {
+        const tip = worldLandmarks[fingerTips[i]];
+        const base = worldLandmarks[fingerBases[i]];
+
+        // 3B Öklid Mesafesi Hesaplama
+        const distTipToWrist = Math.sqrt(
+            Math.pow(tip.x - wrist.x, 2) + 
+            Math.pow(tip.y - wrist.y, 2) + 
+            Math.pow(tip.z - wrist.z, 2)
+        );
+        const distBaseToWrist = Math.sqrt(
+            Math.pow(base.x - wrist.x, 2) + 
+            Math.pow(base.y - wrist.y, 2) + 
+            Math.pow(base.z - wrist.z, 2)
+        );
+
+        // Eğer parmak ucu bileğe, kök ekleminden daha yakınsa parmak kapanmıştır (yumruk pozisyonu)
+        if (distTipToWrist < distBaseToWrist) {
+            closedFingersCount++;
+        }
+    }
+
+    // 4 parmaktan en az 3'ü kapanmışsa bu bir yumruktur!
+    return closedFingersCount >= 3;
+}

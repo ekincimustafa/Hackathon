@@ -349,3 +349,18 @@ canvas { z-index: 2; }
         height: 500px;
     }
 }
+/* Fütüristik Siber Uyarı Kutusu */
+.cyber-warning-box {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 68, 68, 0.08);
+    border-left: 4px solid #ff4444;
+    color: #ff8888;
+    font-size: 0.95em;
+    text-align: left;
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    box-shadow: 0 5px 15px rgba(255, 68, 68, 0.05);
+    animation: fadeIn 0.3s ease-in-out;
+}

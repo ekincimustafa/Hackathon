@@ -397,6 +397,15 @@ window.nextStep = function(stepNumber) {
 
                 // 3. Yapay Zeka Yorumunu Bas
                 document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
+                
+                // --- Cinsiyet ve Boyut Uyarı Kontrolü ---
+                const warningElement = document.getElementById('cyber-gender-warning');
+                if (stylist.warning) {
+                    warningElement.innerText = stylist.warning;
+                    warningElement.style.display = 'block';
+                } else {
+                    warningElement.style.display = 'none';
+                }
 
                 // 4. Alternatif Önerileri Bas
                 if (stylist.recommendations && stylist.recommendations.length > 0) {

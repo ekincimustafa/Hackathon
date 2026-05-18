@@ -168,11 +168,17 @@ async def analyze_watch(data: AnalysisRequest):
     prompt_stylist = f"""
     Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
 
-    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
+    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex if data.skinColorHex else 'Belirtilmemiş'}
     SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
 
     KURALLAR:
-    1. YORUM: Kullanıcıya 3-4 cümlelik tatmin edici, teknik (ergonomi ve renk uyumu) ama çok şık bir stil analizi yaz. Bu yorum genel tarz üzerine odaklanmalı.
+    1. YORUM YAPISI: Kullanıcıya rozet destekli mikro satırlar halinde bir analiz yaz. HTML kullanarak her satırın başına aşağıdaki gibi kapsüller ekle ve aralarına <br><br> koy:
+       <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>FORM</span> [Saatin tarzı ve formu üzerine tek cümle]
+       <br><br>
+       <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>UYUM</span> [Bilek ölçüsü ve kasa çapı uyumu üzerine tek cümle]
+       <br><br>
+       <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>TON</span> [Saat materyali ile doğal ten renginin alt ton uyumu üzerine tek cümle]
+       ⚠️ KRİTİK KURAL: Metin içinde KESİNLİKLE ham renk kodlarını (#DBA399 vb.) yazma! Yerine 'buğday ten', 'açık ten' gibi kelimeler kullan. JSON hatası almamak için metinde çift tırnak (") ASLA kullanma, sadece tek tırnak (') kullan. 
     2. CİNSİYET UYARISI: Eğer kullanıcı "Kadın" ise ve seçilen saat bariz bir erkek saatiyse (örneğin 40mm üstü maskülen modeller), çıktıdaki "warning" alanına SADECE "Bu saat erkek saatidir." yaz. Başka hiçbir açıklama ekleme. Eğer kullanıcı "Erkek" ise ve seçilen saat kadın saatiyse SADECE "Bu saat kadın saatidir." yaz. Eğer cinsiyet uyumsuzluğu yoksa "warning" değerini null yap. Cinsiyet uyumsuzluğu varsa skoru (match_score) KESİNLİKLE 45'in altında tut.
     3. VURGU: 'stylist_comment' içindeki önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
     4. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine, tenine ve cinsiyetine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI belirle.

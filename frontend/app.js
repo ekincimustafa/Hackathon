@@ -280,8 +280,10 @@ window.toggleMethod = function() {
 window.proceedFromStep2 = function() {
     const method = document.querySelector('input[name="measureMethod"]:checked').value;
     
+    // YÖNTEM NE OLURSA OLSUN CİNSİYETİ HER DURUMDA KAYDEDİYORUZ
+    window.userData.gender = document.getElementById('gender').value;
+    
     if (method === 'camera') {
-        window.userData.gender = document.getElementById('gender').value;
         window.userData.height = parseFloat(document.getElementById('height').value) || 175;
         window.userData.weight = parseFloat(document.getElementById('weight').value) || 70;
         nextStep(3);
@@ -397,7 +399,7 @@ window.nextStep = function(stepNumber) {
 
                 // 3. Yapay Zeka Yorumunu Bas
                 document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
-                
+
                 // --- Cinsiyet ve Boyut Uyarı Kontrolü ---
                 const warningElement = document.getElementById('cyber-gender-warning');
                 if (stylist.warning) {

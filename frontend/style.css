@@ -1,6 +1,7 @@
+/* --- KÜRESEL AYARLAR VE SİBER ARKA PLAN --- */
 body {
-    background-color: #F5F5F7; /* Çok açık ferah gri */
-    color: #333333; /* Okunabilir koyu gri/siyah metin */
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+    color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     display: flex;
@@ -8,22 +9,27 @@ body {
     align-items: center;
     min-height: 100vh;
     text-align: center;
+    overflow-x: hidden;
 }
 
-/* Sihirbaz Adımları */
+/* --- GLASSMORPHISM PANEL (TÜM ADIMLAR İÇİN) --- */
 .wizard-step {
     display: none;
-    max-width: 500px;
+    max-width: 800px; 
     width: 90%;
-    padding: 40px 30px;
-    background-color: #FFFFFF; /* Beyaz kart */
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05); /* Yumuşak gölge */
+    padding: 50px 40px;
+    background: rgba(255, 255, 255, 0.03); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
 }
 
 .wizard-step.active {
     display: block;
-    animation: fadeIn 0.4s ease-in-out;
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -31,14 +37,25 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- TİPOGRAFİ (YAZI STİLLERİ) --- */
 h1, h2 {
-    color: #111;
+    color: #ffffff;
+    font-weight: 300; 
+    letter-spacing: 3px;
+    text-transform: uppercase;
     margin-top: 0;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-p { color: #666; line-height: 1.5; }
+p { 
+    color: #cccccc; 
+    line-height: 1.7; 
+    font-size: 1.05em;
+    margin-bottom: 30px;
+}
 
-/* Form Elemanları */
+/* --- FORM ELEMANLARI (KOYU TEMA) --- */
 .input-group {
     margin-bottom: 20px;
     text-align: left;
@@ -47,30 +64,32 @@ p { color: #666; line-height: 1.5; }
 .input-group label {
     display: block;
     margin-bottom: 8px;
-    color: #555;
+    color: #aaaaaa;
     font-size: 0.9em;
     font-weight: 500;
+    letter-spacing: 1px;
 }
 
 .input-group input, .input-group select {
     width: 100%;
     padding: 14px;
     border-radius: 10px;
-    border: 1px solid #E0E0E0;
-    background-color: #FAFAFA;
-    color: #333;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
     font-size: 1em;
     box-sizing: border-box;
-    transition: border-color 0.3s;
+    transition: all 0.3s;
 }
 
 .input-group input:focus, .input-group select:focus {
     outline: none;
-    border-color: #FF6B00;
-    background-color: #FFF;
+    border-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
-/* Yöntem Seçici Radyo Butonları */
+/* Yöntem Seçici Radyo Butonları (Koyu Tema) */
 .method-selector {
     display: flex;
     flex-direction: column;
@@ -79,54 +98,76 @@ p { color: #666; line-height: 1.5; }
     text-align: left;
 }
 .method-selector label {
-    background: #FAFAFA;
-    border: 1px solid #E0E0E0;
-    padding: 12px;
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cccccc;
+    padding: 14px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: 500;
+    transition: background 0.3s, border-color 0.3s;
 }
-.method-selector input { margin-right: 10px; }
+.method-selector label:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+.method-selector input { margin-right: 10px; accent-color: #ffffff; }
 
-/* Butonlar */
+/* --- LÜKS MİNİMALİST BUTONLAR --- */
 .btn-primary {
-    background-color: #FF6B00;
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 10px;
-    font-size: 1em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    background: transparent; 
+    border: 2px solid #ffffff; 
+    color: #ffffff; 
+    padding: 14px 32px; 
+    border-radius: 12px; 
+    font-size: 1.05em; 
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    letter-spacing: 2px; 
+    transition: all 0.3s ease; 
     margin-top: 10px;
+    display: inline-block;
 }
-.btn-primary:hover { background-color: #E55D00; transform: translateY(-2px); }
+
+.btn-primary:hover { 
+    background: #ffffff; 
+    color: #000000; 
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); 
+    transform: translateY(-2px);
+}
 
 .btn-secondary {
     background-color: transparent;
-    color: #666;
-    border: 1px solid #CCC;
+    color: #aaaaaa;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 14px 28px;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 1em;
     cursor: pointer;
     margin-right: 10px;
+    transition: all 0.3s;
 }
-.btn-secondary:hover { background-color: #F0F0F0; color: #333; }
+.btn-secondary:hover { 
+    border-color: #ffffff; 
+    color: #ffffff; 
+    background: rgba(255, 255, 255, 0.05); 
+}
 
-/* Kamera Alanı */
+/* --- KAMERA VE ANALİZ EKRANLARI (ADIM 3 & 4) --- */
 .camera-container {
     width: 100%;
     height: 400px;
-    background-color: #EAEAEA;
+    background-color: #000000;
     border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     overflow: hidden;
     margin-top: 10px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
 }
 
 video, canvas {
@@ -134,72 +175,54 @@ video, canvas {
 }
 canvas { z-index: 2; }
 
-/* Yeni Saydam El Filigranı */
+/* El Filigranı */
 .hand-guide {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 140px;
-    height: 220px;
-    z-index: 3;
-    pointer-events: none;
-    opacity: 0.8;
-}
-
-.stat-item { display: flex; align-items: center; margin: 4px 0; }
-.color-box { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #CCC; margin-left: 8px; }
-
-.flip-btn {
-    position: absolute; top: 15px; right: 15px;
-    background-color: rgba(255, 255, 255, 0.9); color: #333;
-    border: none; padding: 8px 14px; border-radius: 20px;
-    cursor: pointer; z-index: 4; font-size: 0.85em; font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-/* Modern El Filigranı */
-/* Senin Yeni SVG El Filigranın İçin Ayarlar */
-.hand-guide {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 250px; /* SVG oranlarına uyacak şekilde genişletildi */
+    width: 250px; 
     height: 260px;
     z-index: 3;
     pointer-events: none;
-    color: rgba(255, 107, 0, 0.7); /* SVG'deki 'currentColor' değerini turuncuya boyar */
+    color: rgba(255, 255, 255, 0.4); 
 }
 
 .hand-guide svg {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0px 0px 5px rgba(255, 107, 0, 0.5)); /* Hoş bir neon parlama efekti */
+    filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.3)); 
 }
 
-/* YENİ: Durum ve Veri Paneli */
-.status-panel {
-    background-color: #FAFAFA;
-    border: 1px solid #E0E0E0;
+.flip-btn {
+    position: absolute; top: 15px; right: 15px;
+    background-color: rgba(0, 0, 0, 0.6); color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3); padding: 8px 14px; border-radius: 20px;
+    cursor: pointer; z-index: 4; font-size: 0.85em; font-weight: bold;
+    backdrop-filter: blur(5px); transition: 0.3s;
+}
+.flip-btn:hover { background-color: #ffffff; color: #000000; }
+
+/* Durum ve Veri Paneli */
+.status-panel, .result-summary {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 15px;
-    margin-top: 15px;
+    padding: 20px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    text-align: left;
 }
 
 .status-message {
     font-size: 1.05em;
     font-weight: bold;
-    color: #666;
+    color: #aaaaaa;
     transition: color 0.3s;
 }
-
-.status-message.counting {
-    color: #FF6B00; /* Geri sayım yaparken turuncuya döner */
-}
+.status-message.counting { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
 
 .live-stats {
     display: flex;
@@ -207,160 +230,52 @@ canvas { z-index: 2; }
     align-items: center;
     font-size: 0.95em;
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
 }
 
-.stat-item {
-    display: flex;
-    align-items: center;
-}
-
+.stat-item { display: flex; align-items: center; }
 .color-box {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid #CCC;
-    margin-left: 8px;
-    background-color: #000;
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3); margin-left: 8px; background-color: #000;
 }
 
-/* 4. Adım Özet Paneli */
-.result-summary {
-    background-color: #FAFAFA;
-    border: 1px solid #E0E0E0;
-    border-radius: 12px;
-    padding: 20px;
-    margin-top: 15px;
-    text-align: left;
-}
 .summary-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #EAEAEA;
-    font-size: 1.1em;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1em; color: #dddddd;
 }
 .summary-item:last-child { border-bottom: none; }
-
-.result-box {
-    background-color: #FAFAFA; padding: 20px; border-radius: 12px;
-    border-left: 4px solid #FF6B00; text-align: left; margin-bottom: 20px;
-}
-
-/* --- 5. ADIM UI TASARIMLARI VE ANİMASYONLAR --- */
+.summary-item strong { color: #ffffff; }
 
 /* Yükleme Animasyonu */
-.ai-loading-container {
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+.ai-loading-container { padding: 30px; display: flex; flex-direction: column; align-items: center; }
 .spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #FF6B00;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top: 4px solid #ffffff;
     border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 15px;
+    width: 45px; height: 45px;
+    animation: spin 1s linear infinite; margin-bottom: 15px;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Uyumluluk Skoru */
-.score-container { margin: 20px 0; }
-.score-circle {
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    background: conic-gradient(#FF6B00 0%, #EAEAEA 0%); /* JS ile dereceyi değiştireceğiz */
-    display: flex; justify-content: center; align-items: center;
-    margin: 0 auto;
-    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.2);
-    position: relative;
-}
-.score-circle::before {
-    content: ""; position: absolute;
-    width: 85px; height: 85px;
-    background-color: white; border-radius: 50%;
-}
-#match-score-text {
-    position: relative; z-index: 1;
-    font-size: 1.8em; font-weight: bold; color: #333;
-}
-.score-label { font-size: 0.9em; color: #666; font-weight: 600; margin-top: 10px; }
-
-/* Özellik Kartı */
-.specs-card {
-    background-color: #FAFAFA; border: 1px solid #EAEAEA;
-    border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left;
-}
-.specs-card h4 { margin-top: 0; color: #444; border-bottom: 1px solid #EEE; padding-bottom: 8px; margin-bottom: 10px; }
-.specs-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em;
-}
-
-/* AI Yorum Kutusu */
-.ai-comment-box {
-    background: transparent; 
-    border-left: 4px solid #FF6B00; 
-    padding: 5px 15px; 
-    text-align: left; 
-    box-shadow: none; /* Gölgeyi kaldırdık */
-}
-.ai-comment-box h4 { margin-top: 0; color: #FF6B00; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
-.ai-comment-box p { margin: 0; font-size: 0.95em; color: #444; line-height: 1.6; }
-
-/* Yeni Sonuç Ekranı Düzeni */
-.result-layout { display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap; text-align: center; }
-.watch-image-container { 
-    flex: 1; min-width: 150px; background: #fff; padding: 15px; 
-    border-radius: 16px; border: 1px solid #EAEAEA; display: flex; 
-    justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-}
-.watch-image-container img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
-
-.ai-analysis-container { 
-    flex: 1.5; 
-    min-width: 200px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 20px; 
-    background: #fff; /* Sol taraf gibi beyaz arka plan */
-    padding: 25px; 
-    border-radius: 16px; 
-    border: 1px solid #EAEAEA; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-    justify-content: center; 
-}
-/* Yazıyor (Typing) Animasyonu */
-.typing-indicator span { animation: blink 1.4s infinite both; }
-.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
-
-/* --- ADIM 5: LÜKS MİNİMALİST (SİYAH & BEYAZ) KONTROL PANELİ --- */
-
+/* --- ADIM 5: LÜKS MİNİMALİST KONTROL PANELİ --- */
 .futuristic-dashboard {
     position: fixed !important; 
     top: 0 !important; 
     left: 0 !important;
     width: 100vw !important; 
     height: 100vh !important;
-    /* Derin Siyah ve Antrasit Geçişi */
+    max-width: none !important; 
     background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%) !important;
     color: #ffffff !important;
     padding: 40px 5% !important;
     box-sizing: border-box !important;
     z-index: 9999 !important; 
     overflow-y: auto !important; 
-    /* DİKKAT: display: block !important; SİLİNDİ! Artık üst üste binmeyecek */
     margin: 0 !important;
     border-radius: 0 !important; 
     border: none !important;
 }
 
-/* Başlık - Zarif ve Temiz */
 .cyber-title { 
     color: #ffffff; letter-spacing: 6px; text-transform: uppercase; 
     font-size: 1.8em; margin-bottom: 30px; text-align: center; 
@@ -368,48 +283,28 @@ canvas { z-index: 2; }
     font-weight: 300;
 }
 
-/* Esnek Düzen */
 .cyber-layout { 
-    display: flex !important; 
-    flex-direction: row !important; 
-    gap: 50px !important; 
-    align-items: stretch !important; 
-    justify-content: center !important; 
-    width: 100% !important;
-    flex-wrap: wrap; 
+    display: flex !important; flex-direction: row !important; gap: 50px !important; 
+    align-items: stretch !important; justify-content: center !important; 
+    width: 100% !important; flex-wrap: wrap; 
 }
 
-/* Sol: Resim Paneli (Saatin arkasındaki beyaz stüdyo spot ışığı) */
 .cyber-image-panel {
-    flex: 1; 
-    min-width: 320px; 
-    position: relative;
-    perspective: 1000px; 
-    /* Ortası beyaz, kenarları gri/siyah şık bir spot ışığı etkisi */
+    flex: 1; min-width: 320px; position: relative; perspective: 1000px; 
     background: radial-gradient(circle, #ffffff 0%, #777777 100%);
-    border-radius: 20px;
-    display: flex; justify-content: center; align-items: center;
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 40px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    border-radius: 20px; display: flex; justify-content: center; align-items: center;
+    border: 1px solid rgba(255,255,255,0.1); padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
 }
 
 #scraped-watch-image {
-    width: 100%; max-height: 50vh; 
-    object-fit: contain;
-    mix-blend-mode: multiply; /* Beyaz arkaplanı ışığa yedirir */
-    transition: transform 0.1s ease-out; 
-    position: relative; z-index: 2;
+    width: 100%; max-height: 50vh; object-fit: contain; mix-blend-mode: multiply; 
+    transition: transform 0.1s ease-out; position: relative; z-index: 2;
 }
 
-/* Sağ: Veri ve Yorum Paneli */
 .cyber-data-panel { 
-    flex: 1.2; 
-    min-width: 320px;
-    display: flex; flex-direction: column; gap: 25px; justify-content: center; text-align: left;
+    flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 25px; justify-content: center; text-align: left;
 }
 
-/* 5 Bölmeli Çubuk (Minimalist) */
 .segment-container { 
     background: rgba(255,255,255,0.03); backdrop-filter: blur(10px);
     padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); 
@@ -422,7 +317,6 @@ canvas { z-index: 2; }
 .segment { flex: 1; background: #333333; border-radius: 6px; transition: background 0.5s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); }
 .segment-labels { display: flex; justify-content: space-between; font-size: 0.75em; color: #777777; text-transform: uppercase; }
 
-/* AI Yorum ve Öneriler */
 .cyber-comment-box { 
     font-size: 1.1em; line-height: 1.8; color: #cccccc; 
     background: rgba(255, 255, 255, 0.03); padding: 25px; 
@@ -432,16 +326,26 @@ canvas { z-index: 2; }
 .ai-recommendations h5 { color: #ffffff; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 .rec-tags { display: flex; gap: 10px; flex-wrap: wrap; }
 .rec-tag { 
-    background: rgba(255, 255, 255, 0.05); color: #ffffff; 
-    padding: 10px 15px; border-radius: 20px; font-size: 0.9em; 
-    border: 1px solid rgba(255, 255, 255, 0.3); transition: 0.3s;
+    background: rgba(255, 255, 255, 0.05); color: #ffffff; padding: 10px 15px; 
+    border-radius: 20px; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.3); transition: 0.3s;
 }
 .rec-tag:hover { background: rgba(255, 255, 255, 0.15); cursor: pointer; }
 
-/* Zarif Buton */
 .btn-cyber { 
     background: transparent; border: 2px solid #ffffff; color: #ffffff; 
     padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: bold; 
     cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; margin-top: 10px; 
 }
 .btn-cyber:hover { background: #ffffff; color: #000000; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+
+/* PC ve Tablet ekranları için özel genişleme ayarı */
+@media (min-width: 768px) {
+    .wizard-step {
+        max-width: 900px;
+        padding: 50px 60px;
+    }
+    
+    .camera-container {
+        height: 500px;
+    }
+}

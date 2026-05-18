@@ -162,16 +162,20 @@ async def analyze_watch(data: AnalysisRequest):
     # =========================================================================
     print("\n[Stilist Ajan] Yapay Zeka kişiselleştirilmiş moda yorumu üretiyor...")
     
+    # Backend'e gelen İngilizce cinsiyet bilgisini Türkçeye çevirelim ki AI daha iyi anlasın
+    cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
+
     prompt_stylist = f"""
     Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
 
-    KULLANICI: Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
+    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
     SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
 
     KURALLAR:
     1. YORUM: Kullanıcıya 3-4 cümlelik tatmin edici, teknik (ergonomi ve renk uyumu) ama çok şık bir stil analizi yaz.
-    2. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
-    3. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine ve tenine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI (Marka değil, stil ve ölçü) belirle (Örn: "38mm Koyu Kadranlı Titanyum Kasa", "36mm Klasik Dress Watch").
+    2. CİNSİYET VE STİL KONTROLÜ: Eğer kullanıcı "Kadın" ise ve saat bariz bir şekilde maskülen/büyük kasalı bir erkek saatiyse (örneğin 42mm ve üstü kalın çelik), bu durumu uyararak ama modaya uygun bir dille yorumla. (Örn: "Maskülen hatlara sahip bu büyük kasa model, feminen tarzınızla iddialı ve oversize bir kontrast yaratacaktır..."). Aynı şekilde ince bilekli bir erkeğe çok büyük bir saat veya tam tersi durumları da dürüstçe değerlendir. Uyumsuzluk varsa skoru (match_score) düşür.
+    3. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
+    4. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine, tenine ve cinsiyetine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI (Marka değil, stil ve ölçü) belirle (Örn: "36mm Koyu Kadranlı Zarif Çelik Kasa", "38mm Klasik Unisex Model").
     
     ÇIKTI FORMATI (SADECE JSON):
     {{

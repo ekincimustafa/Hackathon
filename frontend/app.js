@@ -380,75 +380,8 @@ window.nextStep = function(stepNumber) {
                 `;
             } 
             else if (data.status === "success") {
-                document.getElementById('ai-results').style.display = 'flex'; 
-                const watch = data.scraped_data;
-                const stylist = data.stylist_data; 
-                
-                // 1. Resmi Yerleştir
-                const imgElement = document.getElementById('scraped-watch-image');
-                imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/300x400?text=Saat+Gorseli";
-
-                // 2. Skoru 5 Bölmeli Çubuğa Çevir
-                const score = stylist.match_score;
-                const segments = document.querySelectorAll('.segment');
-                let activeSegments = 0;
-                let statusText = "HESAPLANIYOR";
-                let statusColor = "#fff";
-
-                if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#666666"; }
-                else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#888888"; }
-                else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#AAAAAA"; }
-                else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#DDDDDD"; }
-                else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#FFFFFF"; }
-
-                document.getElementById('match-status-text').innerText = statusText;
-                document.getElementById('match-status-text').style.color = statusColor;
-
-                // Çubukları yak
-                segments.forEach((seg, index) => {
-                    if (index < activeSegments) seg.style.background = statusColor;
-                    else seg.style.background = "#333";
-                });
-
-                // 3. Yapay Zeka Yorumunu Bas
-                document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
-
-                // --- Cinsiyet ve Boyut Uyarı Kontrolü ---
-                const warningElement = document.getElementById('cyber-gender-warning');
-                if (stylist.warning) {
-                    warningElement.innerText = stylist.warning;
-                    warningElement.style.display = 'block';
-                } else {
-                    warningElement.style.display = 'none';
-                }
-
-                // 4. Alternatif Önerileri Bas
-                if (stylist.recommendations && stylist.recommendations.length > 0) {
-                    document.getElementById('ai-recs-container').style.display = 'block';
-                    const recsHtml = stylist.recommendations.map(rec => `<span class="rec-tag">${rec}</span>`).join('');
-                    document.getElementById('ai-rec-tags').innerHTML = recsHtml;
-                } else {
-                    document.getElementById('ai-recs-container').style.display = 'none';
-                }
-
-                // 4. EFSANE 3D HOLOGRAM / TILT ETKİSİ
-                const tiltContainer = document.getElementById('tilt-container');
-                tiltContainer.addEventListener('mousemove', (e) => {
-                    const rect = tiltContainer.getBoundingClientRect();
-                    const x = e.clientX - rect.left; // Container içindeki X pozisyonu
-                    const y = e.clientY - rect.top;  // Container içindeki Y pozisyonu
-                    
-                    // Saati farenin yönüne doğru açısal olarak eğ (Maksimum 20 derece)
-                    const xRotation = 20 * ((y - rect.height / 2) / rect.height);
-                    const yRotation = -20 * ((x - rect.width / 2) / rect.width);
-                    
-                    imgElement.style.transform = `rotateX(${xRotation}deg) rotateY(${yRotation}deg) scale(1.05)`;
-                });
-
-                tiltContainer.addEventListener('mouseleave', () => {
-                    // Fare çıkınca eski haline yumuşakça dön
-                    imgElement.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-                });
+                document.getElementById('ai-loading').style.display = 'none';
+                renderAIResults(data); // Ana analizi ekrana bas
             }
         })
         .catch(error => {
@@ -467,6 +400,101 @@ window.nextStep = function(stepNumber) {
     allSteps.forEach(step => step.classList.remove('active'));
     const targetStep = document.getElementById(`step-${stepNumber}`);
     if (targetStep) targetStep.classList.add('active');
+};
+
+// =========================================================================
+// YENİ EKLENEN KISIM: ARAYÜZÜ GÜNCELLEME VE ALTERNATİF ARAMA
+// =========================================================================
+function renderAIResults(data) {
+    document.getElementById('ai-results').style.display = 'flex'; 
+    const watch = data.scraped_data;
+    const stylist = data.stylist_data; 
+    
+    const imgElement = document.getElementById('scraped-watch-image');
+    imgElement.src = (watch.resim_url && watch.resim_url !== "Belirtilmemiş") ? watch.resim_url : "https://via.placeholder.com/400x500/111111/FFFFFF?text=Saat+Gorseli";
+
+    const score = stylist.match_score;
+    const segments = document.querySelectorAll('.segment');
+    let activeSegments = 0, statusText = "HESAPLANIYOR", statusColor = "#fff";
+
+    if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#666666"; }
+    else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#888888"; }
+    else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#AAAAAA"; }
+    else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#DDDDDD"; }
+    else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#FFFFFF"; }
+
+    document.getElementById('match-status-text').innerText = statusText;
+    document.getElementById('match-status-text').style.color = statusColor;
+
+    segments.forEach((seg, index) => {
+        seg.style.background = (index < activeSegments) ? statusColor : "#333";
+    });
+
+    document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
+
+    const warningElement = document.getElementById('cyber-gender-warning');
+    if (stylist.warning) {
+        warningElement.innerText = stylist.warning;
+        warningElement.style.display = 'block';
+    } else {
+        warningElement.style.display = 'none';
+    }
+
+    // ÖNERİLERİ TIKLANABİLİR (ONCLICK) YAPIYORUZ
+    if (stylist.recommendations && stylist.recommendations.length > 0) {
+        document.getElementById('ai-recs-container').style.display = 'block';
+        const recsHtml = stylist.recommendations.map(rec => `<span class="rec-tag" onclick="loadAlternative('${rec}')">${rec}</span>`).join('');
+        document.getElementById('ai-rec-tags').innerHTML = recsHtml;
+    } else {
+        document.getElementById('ai-recs-container').style.display = 'none';
+    }
+
+    // 3D HOLOGRAM ETKİSİ
+    const tiltContainer = document.getElementById('tilt-container');
+    tiltContainer.onmousemove = (e) => {
+        const rect = tiltContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        const xRotation = 20 * ((y - rect.height / 2) / rect.height);
+        const yRotation = -20 * ((x - rect.width / 2) / rect.width);
+        imgElement.style.transform = `rotateX(${xRotation}deg) rotateY(${yRotation}deg) scale(1.05)`;
+    };
+    tiltContainer.onmouseleave = () => { imgElement.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`; };
+}
+
+// Alternatif Rota Butonuna Tıklandığında Çalışacak Fonksiyon
+window.loadAlternative = function(styleText) {
+    document.getElementById('ai-results').style.display = 'none';
+    document.getElementById('ai-loading').style.display = 'flex';
+    document.getElementById('loading-text').innerText = `Trendyol'da "${styleText}" aranıyor...`;
+
+    const altData = {
+        target_style: styleText,
+        gender: window.userData.gender,
+        wristRangeStr: window.userData.wristRangeStr,
+        skinColorHex: window.userData.skinColorHex || "#000000"
+    };
+
+    fetch('http://127.0.0.1:8000/simulate_alternative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(altData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            document.getElementById('ai-loading').style.display = 'none';
+            renderAIResults(data); // Aynı ekranı Trendyol'dan gelen gerçek verilerle güncelle
+        } else {
+            alert("Ürün bulunamadı veya bir hata oluştu.");
+            document.getElementById('ai-loading').style.display = 'none';
+            document.getElementById('ai-results').style.display = 'flex'; 
+        }
+    })
+    .catch(err => {
+        console.error("Hata:", err);
+        document.getElementById('ai-loading').style.display = 'none';
+        document.getElementById('ai-results').style.display = 'flex';
+    });
 };
 
 // --- YUMRUK ALGILAMA FİLTRESİ ---

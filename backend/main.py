@@ -5,6 +5,7 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 from pydantic import BaseModel
 from bs4 import BeautifulSoup
 from curl_cffi import requests as curl_requests # YENİ SİLAHIMIZ: TLS Parmak İzi Taklitçisi
@@ -45,9 +46,9 @@ class AnalysisRequest(BaseModel):
     height: float
     weight: float
     wristRangeStr: str
-    skinColorHex: str
+    skinColorHex: Optional[str] = "#000000" 
     productLink: str
-    manualWatchSize: str = None 
+    manualWatchSize: Optional[str] = None
 
 # --- 5. AKILLI ARAÇLAR ---
 def extract_from_url(url: str):
@@ -162,20 +163,25 @@ async def analyze_watch(data: AnalysisRequest):
     # =========================================================================
     print("\n[Stilist Ajan] Yapay Zeka kişiselleştirilmiş moda yorumu üretiyor...")
     
+    cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
+
     prompt_stylist = f"""
     Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
 
-    KULLANICI: Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
+    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
     SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
 
     KURALLAR:
-    1. YORUM: Kullanıcıya 3-4 cümlelik tatmin edici, teknik (ergonomi ve renk uyumu) ama çok şık bir stil analizi yaz.
-    2. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
-    3. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine ve tenine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI (Marka değil, stil ve ölçü) belirle (Örn: "38mm Koyu Kadranlı Titanyum Kasa", "36mm Klasik Dress Watch").
+    1. YORUM: Kullanıcıya 3-4 cümlelik tatmin edici, teknik (ergonomi ve renk uyumu) ama çok şık bir stil analizi yaz. Bu yorum genel tarz üzerine odaklanmalı.
+    2. CİNSİYET UYARISI: Eğer kullanıcı "Kadın" ise ve seçilen saat bariz bir erkek saatiyse (örneğin 40mm üstü maskülen modeller), çıktıdaki "warning" alanına SADECE "Bu saat erkek saatidir." yaz. Başka hiçbir açıklama ekleme. Eğer kullanıcı "Erkek" ise ve seçilen saat kadın saatiyse SADECE "Bu saat kadın saatidir." yaz. Eğer cinsiyet uyumsuzluğu yoksa "warning" değerini null yap. Cinsiyet uyumsuzluğu varsa skoru (match_score) KESİNLİKLE 45'in altında tut.
+    3. VURGU: 'stylist_comment' içindeki önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
+    4. ÖNERİLER: Bu saatin uyumluluk durumuna göre, kullanıcının bileğine, tenine ve cinsiyetine ÇOK DAHA İYİ uyacak 2 adet alternatif saat TARZI belirle.
+    5. JSON FORMAT KORUMASI: Çıktın KESİNLİKLE geçerli bir JSON olmalıdır. Metinlerin içinde ASLA çift tırnak (") kullanma! Vurgu veya alıntı için tek tırnak (') kullan.
     
     ÇIKTI FORMATI (SADECE JSON):
     {{
         "match_score": <10 ile 100 arası>,
+        "warning": "<Sadece kısa uyarı metni veya null>",
         "stylist_comment": "<Detaylı ve vurgulu HTML metin>",
         "recommendations": ["<Öneri 1>", "<Öneri 2>"]
     }}

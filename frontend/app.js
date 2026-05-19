@@ -370,31 +370,35 @@ window.nextStep = function(stepNumber) {
             alert("Lütfen analiz için bir saat linki yapıştırın.");
             return; 
         }
+        document.getElementById('cyber-main-title').innerText = "SİSTEM ANALİZ EDİYOR";
 
         // UI Hazırlıkları
         document.getElementById('ai-loading').style.display = 'flex';
         document.getElementById('ai-results').style.display = 'none';
         document.getElementById('error-container').style.display = 'none';
         
-        // --- JÜRİ ŞOVU: CANLI AJAN TERMİNALİ ---
+        // --- JÜRİ ŞOVU: CANLI AKAN TERMİNAL ---
         const loadingText = document.getElementById('loading-text');
         const agentMessages = [
-            "[Sistem] Paylaşımlı bağlam oluşturuluyor...",
-            "[Arama Ajanı] Trendyol veri tabanına sızılıyor...",
-            "[Veri Ajanı] JSON-LD meta verileri ayrıştırılıyor...",
-            "[Güvenlik] Anti-Bot (Cloudflare) atlatılıyor...",
-            "[Stilist Ajan] Biyometrik verilerinizle uyum hesaplanıyor...",
-            "[İnceleme Ajanı] Son rapor hazırlanıyor..."
+            "Paylaşımlı bağlam havuzu oluşturuluyor...",
+            "Trendyol veri tabanına sızılıyor...",
+            "JSON-LD meta verileri ayrıştırılıyor...",
+            "Anti-Bot (Cloudflare) atlatılıyor...",
+            "Biyometrik uyum hesaplanıyor...",
+            "Son analiz raporu hazırlanıyor..."
         ];
         
         let msgIndex = 0;
-        loadingText.innerText = agentMessages[0];
+        loadingText.innerHTML = `<div>${agentMessages[0]}</div>`;
+        
         window.agentInterval = setInterval(() => {
             msgIndex++;
             if(msgIndex < agentMessages.length) {
-                loadingText.innerText = agentMessages[msgIndex];
+                loadingText.innerHTML += `<div>${agentMessages[msgIndex]}</div>`;
+            } else {
+                clearInterval(window.agentInterval);
             }
-        }, 1500); // Her 1.5 saniyede bir metni değiştir
+        }, 1500);
 
         fetch('http://127.0.0.1:8000/analyze', {
             method: 'POST',
@@ -451,10 +455,10 @@ window.nextStep = function(stepNumber) {
     if (targetStep) targetStep.classList.add('active');
 };
 
-// =========================================================================
-// YENİ EKLENEN KISIM: ARAYÜZÜ GÜNCELLEME VE ALTERNATİF ARAMA
-// =========================================================================
 function renderAIResults(data) {
+    // ANALİZ BİTTİĞİ İÇİN BAŞLIĞI GÜNCELLİYORUZ
+    document.getElementById('cyber-main-title').innerText = "SİSTEM ANALİZİ TAMAMLANDI";
+    
     document.getElementById('ai-results').style.display = 'flex'; 
     const watch = data.scraped_data;
     const stylist = data.stylist_data; 
@@ -464,19 +468,27 @@ function renderAIResults(data) {
 
     const score = stylist.match_score;
     const segments = document.querySelectorAll('.segment');
-    let activeSegments = 0, statusText = "HESAPLANIYOR", statusColor = "#fff";
+    
+    // --- 10 SEGMENTLİ YENİ MATEMATİKSEL HESAPLAMA VE RENK SKALASI ---
+    // Skor 100 üzerinden olduğu için 10'a bölüp kaç segment yanacağını buluyoruz (Örn: 72 skor = 7 segment)
+    let activeSegments = Math.round(score / 10);
+    if (activeSegments < 1 && score > 0) activeSegments = 1; // Sıfırlanmayı önle
 
-    if (score < 40) { activeSegments = 1; statusText = "UYUMSUZ"; statusColor = "#666666"; }
-    else if (score < 60) { activeSegments = 2; statusText = "ZAYIF"; statusColor = "#888888"; }
-    else if (score < 75) { activeSegments = 3; statusText = "ORTALAMA"; statusColor = "#AAAAAA"; }
-    else if (score < 90) { activeSegments = 4; statusText = "İYİ UYUM"; statusColor = "#DDDDDD"; }
-    else { activeSegments = 5; statusText = "KUSURSUZ"; statusColor = "#FFFFFF"; }
+    let statusText = "HESAPLANIYOR", statusColor = "#fff";
+
+    if (score < 30) { statusText = "UYUMSUZ"; statusColor = "#666666"; }
+    else if (score < 50) { statusText = "ZAYIF UYUM"; statusColor = "#888888"; }
+    else if (score < 70) { statusText = "ORTALAMA"; statusColor = "#AAAAAA"; }
+    else if (score < 85) { statusText = "İYİ UYUM"; statusColor = "#DDDDDD"; }
+    else if (score < 95) { statusText = "MÜKEMMEL"; statusColor = "#EAEAEA"; }
+    else { statusText = "KUSURSUZ"; statusColor = "#FFFFFF"; }
 
     document.getElementById('match-status-text').innerText = statusText;
     document.getElementById('match-status-text').style.color = statusColor;
 
+    // Tüm segmentleri tara ve aktif segment kadarını renklendir
     segments.forEach((seg, index) => {
-        seg.style.background = (index < activeSegments) ? statusColor : "#333";
+        seg.style.background = (index < activeSegments) ? statusColor : "#222";
     });
 
     document.getElementById('ai-stylist-comment').innerHTML = stylist.stylist_comment;
@@ -489,7 +501,6 @@ function renderAIResults(data) {
         warningElement.style.display = 'none';
     }
 
-    // ÖNERİLERİ TIKLANABİLİR (ONCLICK) YAPIYORUZ
     if (stylist.recommendations && stylist.recommendations.length > 0) {
         document.getElementById('ai-recs-container').style.display = 'block';
         const recsHtml = stylist.recommendations.map(rec => `<span class="rec-tag" onclick="loadAlternative('${rec}')">${rec}</span>`).join('');
@@ -515,23 +526,26 @@ window.loadAlternative = function(styleText) {
     document.getElementById('ai-results').style.display = 'none';
     document.getElementById('ai-loading').style.display = 'flex';
     
-    // --- JÜRİ ŞOVU: ALTERNATİF ROTA TERMİNALİ ---
+    // --- JÜRİ ŞOVU: ALTERNATİF ROTA İÇİN AKAN TERMİNAL ---
     const loadingText = document.getElementById('loading-text');
     const altMessages = [
-        `[Arama Ajanı] "${styleText}" için e-ticaret taranıyor...`,
-        "[Veri Ajanı] Gerçek ürün bağlantısı bulundu...",
-        "[Güvenlik] Sistem engelleri atlatılıyor...",
-        "[Stilist Ajan] Yeni alternatif anatomik olarak analiz ediliyor..."
+        `"${styleText}" için e-ticaret taranıyor...`,
+        "Gerçek ürün bağlantısı bulundu...",
+        "Sistem engelleri atlatılıyor...",
+        "Yeni model anatomik olarak analiz ediliyor..."
     ];
     
     let msgIdx = 0;
-    loadingText.innerText = altMessages[0];
+    loadingText.innerHTML = `<div>${altMessages[0]}</div>`;
+    
     window.altInterval = setInterval(() => {
         msgIdx++;
         if(msgIdx < altMessages.length) {
-            loadingText.innerText = altMessages[msgIdx];
+            loadingText.innerHTML += `<div>${altMessages[msgIdx]}</div>`;
+        } else {
+            clearInterval(window.altInterval);
         }
-    }, 1200);
+    }, 1200)
 
     const altData = {
         target_style: styleText,

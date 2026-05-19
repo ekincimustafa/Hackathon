@@ -258,6 +258,35 @@ canvas { z-index: 2; }
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* --- YENİ EKLENEN CANLI TERMİNAL STİLLERİ --- */
+#loading-text { 
+    font-family: 'Courier New', Courier, monospace; 
+    font-size: 1.25em; 
+    letter-spacing: 1px; 
+    text-align: center; 
+    line-height: 1.8; 
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+}
+
+#loading-text div {
+    animation: fadeInLog 0.4s ease-out forwards;
+    color: #888888; 
+}
+
+#loading-text div:last-child {
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes fadeInLog {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- ADIM 5: LÜKS MİNİMALİST KONTROL PANELİ --- */
 .futuristic-dashboard {
     position: fixed !important; 
@@ -278,32 +307,59 @@ canvas { z-index: 2; }
 }
 
 .cyber-title { 
-    color: #ffffff; letter-spacing: 6px; text-transform: uppercase; 
-    font-size: 1.8em; margin-bottom: 30px; text-align: center; 
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1); 
+    color: #ffffff; 
+    letter-spacing: 6px; /* Harflerin arasını biraz daha açıp lüks hissiyatı artırdık */
+    text-transform: uppercase; 
+    font-size: 1.8em; /* 1.35em'den 1.8em'e çıkararak yazıyı ciddi oranda büyüttük */
+    margin-bottom: 35px; /* Bar ile arasına biraz daha nefes alma boşluğu ekledik */
+    text-align: center; 
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.2); /* Hafif siber parlamayı artırdık */
     font-weight: 300;
 }
 
 .cyber-layout { 
-    display: flex !important; flex-direction: row !important; gap: 50px !important; 
-    align-items: stretch !important; justify-content: center !important; 
-    width: 100% !important; flex-wrap: wrap; 
+    display: flex; 
+    flex-direction: row; 
+    gap: 50px; 
+    align-items: stretch; 
+    justify-content: center; 
+    flex-wrap: wrap; 
 }
 
 .cyber-image-panel {
-    flex: 1; min-width: 320px; position: relative; perspective: 1000px; 
-    background: radial-gradient(circle, #ffffff 0%, #777777 100%);
-    border-radius: 20px; display: flex; justify-content: center; align-items: center;
-    border: 1px solid rgba(255,255,255,0.1); padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    flex: 0.5; 
+    max-width: 320px; 
+    min-width: 250px; 
+    /* align-self: center; ve max-height kısımlarını sildik, artık esnemekte özgür! */
+    position: relative; 
+    perspective: 1000px; 
+    background: radial-gradient(circle, #ffffff 0%, #888888 100%);
+    border-radius: 20px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; /* İçindeki saat resmini her zaman tam ortada tutar */
+    border: 1px solid rgba(255,255,255,0.2); 
+    padding: 20px; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
 }
 
 #scraped-watch-image {
-    width: 100%; max-height: 50vh; object-fit: contain; mix-blend-mode: multiply; 
-    transition: transform 0.1s ease-out; position: relative; z-index: 2;
+    width: 100%; 
+    max-height: 320px; /* Saatin çok ezilmemesi için ideal yükseklik */
+    object-fit: contain; 
+    mix-blend-mode: multiply; /* Beyaz arkaplanı yokedip fonla kaynaştıran sihirli kod */
+    transition: transform 0.1s ease-out; 
+    position: relative; 
+    z-index: 2; 
 }
 
 .cyber-data-panel { 
-    flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 25px; justify-content: center; text-align: left;
+    flex: 1.2; 
+    min-width: 320px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: stretch; /* İçindeki metin kutusunu uzamaya zorlar */
+    text-align: left;
 }
 
 .segment-container { 
@@ -314,15 +370,25 @@ canvas { z-index: 2; }
 .match-title { color: #aaaaaa; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
 #match-status-text { font-size: 1.8em; font-weight: bold; text-shadow: 0 0 15px rgba(255,255,255,0.2); }
 
-.segment-bar { display: flex; gap: 8px; height: 12px; margin-bottom: 10px; }
-.segment { flex: 1; background: #333333; border-radius: 6px; transition: background 0.5s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); }
+.segment-bar { display: flex; gap: 5px; height: 8px; margin-bottom: 10px; }
+.segment { flex: 1; background: #222222; border-radius: 3px; transition: background 0.5s ease; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }
 .segment-labels { display: flex; justify-content: space-between; font-size: 0.75em; color: #777777; text-transform: uppercase; }
 
 .cyber-comment-box { 
-    font-size: 1.1em; line-height: 1.8; color: #cccccc; 
-    background: rgba(255, 255, 255, 0.03); padding: 25px; 
-    border-left: 4px solid #ffffff; border-radius: 8px;
+    font-size: 1.1em; 
+    line-height: 1.8; 
+    color: #cccccc; 
+    background: rgba(255, 255, 255, 0.03); 
+    padding: 25px; 
+    border-left: 4px solid #ffffff; 
+    border-radius: 8px;
+    flex: 1; /* En kritik kod: Metin az olsa bile kutuyu aşağıya kadar sündürür */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Yorum metnini kendi içinde dikey olarak ortalar */
+    box-sizing: border-box;
 }
+
 .ai-recommendations { margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); }
 .ai-recommendations h5 { color: #ffffff; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 .rec-tags { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -364,4 +430,37 @@ canvas { z-index: 2; }
     letter-spacing: 0.5px;
     box-shadow: 0 5px 15px rgba(255, 68, 68, 0.05);
     animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ai-results Ana Taşıyıcısı: Her şeyi dikeyde alt alta ve ortada tutar */
+#ai-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Tüm blokları tam ortaya hizala */
+    gap: 30px; /* Bloklar arasına nefes alma boşluğu */
+    width: 100%;
+}
+
+/* Ortalanmış Skor Barı İçin Genişlik Sınırı */
+.centered-element {
+    width: 70%;
+    max-width: 650px; /* Çok uzamasın diye sınır koyduk */
+    margin: 0 auto;
+}
+
+/* Ortalanmış Buton İçin Özel Genişlik */
+.btn-bottom {
+    max-width: 200px;
+    margin-top: 10px;
+}
+
+/* Ortadaki İkili Panelin (Saat ve Yorum) Hizalaması */
+.cyber-layout { 
+    display: flex; 
+    flex-direction: row; 
+    gap: 40px; 
+    align-items: stretch; /* center yerine stretch yaptık ki kutular aynı boya uzasın */
+    justify-content: center; 
+    flex-wrap: wrap; 
+    width: 100%;
 }

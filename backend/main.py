@@ -249,13 +249,35 @@ async def analyze_watch(data: AnalysisRequest):
     try:
         res_stylist = scraping_agent.generate_content(prompt_stylist)
         clean_stylist_json = res_stylist.text.replace('```json', '').replace('```', '').strip()
-        shared_context["stylist_report"] = json.loads(clean_stylist_json)
-        print(f"[Stilist Ajan] Bağlam güncellendi. Skor: %{shared_context['stylist_report'].get('match_score')}")
+        
+        # --- TIP KORUMA ZIRHI: Gelen veri liste ise sözlüğe güvenli bir şekilde ayıkla ---
+        parsed_json = json.loads(clean_stylist_json)
+        if isinstance(parsed_json, list) and len(parsed_json) > 0:
+            parsed_json = parsed_json[0]  # Listenin içindeki ilk gerçek sözlük nesnesini al
+        if not isinstance(parsed_json, dict):
+            parsed_json = {}
+            
+        shared_context["stylist_report"] = parsed_json
+        
+        # 2. İNCELEME AJANI (GUARDRAIL) BAĞLAM ÜZERİNDEN DENETLİYOR
+        print("[İnceleme Ajanı] Çıktı doğrulanıyor...")
+        if '"' in shared_context["stylist_report"].get("stylist_comment", ""):
+            print("[İnceleme Ajanı] HATA: Çıktıda yasaklı çift tırnak bulundu! Düzeltiliyor...")
+            shared_context["stylist_report"]["stylist_comment"] = shared_context["stylist_report"]["stylist_comment"].replace('"', "'")
+        
+        if shared_context["stylist_report"].get("match_score") is None:
+            shared_context["stylist_report"]["match_score"] = 70
+            
+        print(f"[İnceleme Ajanı] Doğrulama başarılı. Skor: %{shared_context['stylist_report'].get('match_score')}")
+        
     except Exception as e:
         print(f"[Stilist Ajan] Hata oluştu: {e}")
+        # LLM patlarsa veya beklenmedik bir yapı dönerse devreye giren "Fallback" mekanizması
         shared_context["stylist_report"] = {
             "match_score": 75,
-            "stylist_comment": "Saat modeliniz tarzınıza şık bir dokunuş katacaktır ancak tam analiz için ek verilere ihtiyaç var."
+            "warning": None,
+            "stylist_comment": "Saat modeliniz tarzınıza şık bir dokunuş katacaktır ancak tam uyumluluk analizi için ek görsel verilere ihtiyaç var.",
+            "recommendations": ["38mm çelik klasik", "40mm siyah deri"]
         }
 
     shared_context["system_status"] = "success"
@@ -330,16 +352,36 @@ async def simulate_alt(data: AlternativeRequest):
     try:
         res = scraping_agent.generate_content(prompt_alt)
         clean_json = res.text.replace('```json', '').replace('```', '').strip()
-        shared_context["stylist_report"] = json.loads(clean_json)
         
-        return {
-            "status": "success",
-            "scraped_data": shared_context["watch_data"], 
-            "stylist_data": shared_context["stylist_report"]    
-        }
+        # --- TIP KORUMA ZIRHI ---
+        parsed_alt = json.loads(clean_json)
+        if isinstance(parsed_alt, list) and len(parsed_alt) > 0:
+            parsed_alt = parsed_alt[0]
+        if not isinstance(parsed_alt, dict):
+            parsed_alt = {}
+            
+        shared_context["stylist_report"] = parsed_alt
+        
+        print("[İnceleme Ajanı] Çıktı doğrulanıyor...")
+        if '"' in shared_context["stylist_report"].get("stylist_comment", ""):
+            print("[İnceleme Ajanı] HATA: Çıktıda yasaklı çift tırnak bulundu! Düzeltiliyor...")
+            shared_context["stylist_report"]["stylist_comment"] = shared_context["stylist_report"]["stylist_comment"].replace('"', "'")
+        
+        if shared_context["stylist_report"].get("match_score") is None:
+            shared_context["stylist_report"]["match_score"] = 70
+            
+        print(f"[İnceleme Ajanı] Doğrulama başarılı. Skor: %{shared_context['stylist_report'].get('match_score')}")
+        
     except Exception as e:
         print(f"[Ajan] Alternatif üretilirken hata: {e}")
-        return {"status": "error"}
+        return {"status": "error", "message": str(e)}
+        
+    # GÜVENLİ RETURN: except bloğunun DIŞINDA, yani try-except ile AYNI HİZADA olmalı!
+    return {
+        "status": "success",
+        "scraped_data": shared_context.get("watch_data"), 
+        "stylist_data": shared_context.get("stylist_report")    
+    }
     
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

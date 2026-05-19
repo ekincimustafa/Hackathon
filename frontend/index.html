@@ -111,53 +111,59 @@
     </div>
 
     <div id="step-5" class="wizard-step futuristic-dashboard">
-        <h2 class="cyber-title">SİSTEM ANALİZİ TAMAMLANDI</h2>
+        <h2 class="cyber-title" id="cyber-main-title">SİSTEM ANALİZ EDİYOR</h2>
         
         <div id="ai-loading" class="ai-loading-container">
             <div class="spinner"></div>
             <p id="loading-text">Biyometrik verileriniz işleniyor...</p>
         </div>
         
-        <div id="ai-results" style="display: none;" class="cyber-layout">
+        <div id="ai-results" style="display: none;">
             
-            <div class="cyber-image-panel" id="tilt-container">
-                <img id="scraped-watch-image" src="" alt="Saat">
-                <div class="cyber-glow"></div>
+            <div class="segment-container centered-element">
+                <div class="match-header">
+                    <span class="match-title">Ergonomik Analiz Sonucu</span>
+                    <span id="match-status-text" style="color: #f8f6f5;">--</span>
+                </div>
+                <div class="segment-bar">
+                    <div class="segment" id="seg-1"></div>
+                    <div class="segment" id="seg-2"></div>
+                    <div class="segment" id="seg-3"></div>
+                    <div class="segment" id="seg-4"></div>
+                    <div class="segment" id="seg-5"></div>
+                    <div class="segment" id="seg-6"></div>
+                    <div class="segment" id="seg-7"></div>
+                    <div class="segment" id="seg-8"></div>
+                    <div class="segment" id="seg-9"></div>
+                    <div class="segment" id="seg-10"></div>
+                </div>
+                <div class="segment-labels">
+                    <span>Zayıf Uyum</span>
+                    <span>Mükemmel Uyum</span>
+                </div>
+                <div id="cyber-gender-warning" class="cyber-warning-box" style="display: none;"></div>
             </div>
 
-            <div class="cyber-data-panel">
-                
-                <div class="segment-container">
-                    <div class="match-header">
-                        <span class="match-title">Ergonomik Analiz Sonucu</span>
-                        <span id="match-status-text" style="color: #FF6B00;">--</span>
-                    </div>
-                    <div class="segment-bar">
-                        <div class="segment" id="seg-1"></div>
-                        <div class="segment" id="seg-2"></div>
-                        <div class="segment" id="seg-3"></div>
-                        <div class="segment" id="seg-4"></div>
-                        <div class="segment" id="seg-5"></div>
-                    </div>
-                    <div class="segment-labels">
-                        <span>Zayıf Uyum</span>
-                        <span>Mükemmel Uyum</span>
-                    </div>
-                    <div id="cyber-gender-warning" class="cyber-warning-box" style="display: none;"></div>
+            <div class="cyber-layout">
+                <div class="cyber-image-panel" id="tilt-container">
+                    <img id="scraped-watch-image" src="" alt="Saat">
+                    <div class="cyber-glow"></div>
                 </div>
 
-                <div class="cyber-comment-box">
-                    <p id="ai-stylist-comment"></p>
-                    
-                    <div class="ai-recommendations" id="ai-recs-container" style="display: none;">
-                        <h5>Sizin İçin Geliştirilen Alternatif Rotalar:</h5>
-                        <div class="rec-tags" id="ai-rec-tags">
-                            </div>
+                <div class="cyber-data-panel">
+                    <div class="cyber-comment-box">
+                        <p id="ai-stylist-comment"></p>
+                        
+                        <div class="ai-recommendations" id="ai-recs-container" style="display: none;">
+                            <h5>Sizin İçin Geliştirilen Alternatif Rotalar:</h5>
+                            <div class="rec-tags" id="ai-rec-tags"></div>
+                        </div>
                     </div>
                 </div>
-
-                <button class="btn-cyber" onclick="nextStep(1)">YENİ TARAMA BAŞLAT</button>
             </div>
+
+            <button class="btn-cyber centered-element btn-bottom" onclick="nextStep(1)">YENİ TARAMA BAŞLAT</button>
+        </div>
         </div>
         
         <div id="error-container" style="display: none; margin-top: 20px;"></div>

@@ -152,7 +152,7 @@ async function predictWebcam() {
                 
                 // İskeleti kullanıcıyı görsel olarak uyarmak için KIRMIZI çiziyoruz
                 drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#FF0000", lineWidth: 4 });
-                
+                document.getElementById('hand-guide').style.display = 'none';
                 canvasCtx.restore();
                 window.requestAnimationFrame(predictWebcam);
                 return; // Kritik: Hatalı ölçüm alınmasın diye fonksiyonu burada sonlandırıyoruz!
@@ -161,6 +161,19 @@ async function predictWebcam() {
             // Çizimleri kalınlaştırdık (İnce ve cılız görünme sorunu çözüldü)
             drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 4 });
             drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2, radius: 5 });
+
+            const thumbTip = landmarks[4];  
+            const pinkyTip = landmarks[20]; 
+            const handGuide = document.getElementById('hand-guide');
+
+            handGuide.style.display = 'block';
+
+            // Başparmak serçe parmağın solundaysa sağ el şablonu, sağındaysa sol el şablonu
+            if (thumbTip.x < pinkyTip.x) {
+                handGuide.style.transform = "translate(-50%, -50%) scaleX(-1)";
+            } else {
+                handGuide.style.transform = "translate(-50%, -50%) scaleX(1)";
+            }
 
             // 1. GÖRSEL ÖLÇÜM (3B Dünya Koordinatları ile Derinlikten Bağımsız)
             const indexMcpW = worldLandmarks[5];
@@ -221,6 +234,7 @@ async function predictWebcam() {
                 measurementBuffer.push({ wristVal: finalWristCm, color: hexColor });
             }
         } else {
+            document.getElementById('hand-guide').style.display = 'none';
             if (isCountingDown) cancelCountdown();
         }
         canvasCtx.restore();
@@ -297,12 +311,23 @@ window.proceedFromStep2 = function() {
     window.userData.gender = document.getElementById('gender').value;
     
     if (method === 'camera') {
-        window.userData.height = parseFloat(document.getElementById('height').value) || 175;
-        window.userData.weight = parseFloat(document.getElementById('weight').value) || 70;
+        const heightInput = document.getElementById('height').value;
+        const weightInput = document.getElementById('weight').value;
+
+        // KONTROL: Boy veya kilo boşsa, ya da 0'dan küçük bir mantıksız değer girildiyse
+        if (!heightInput || !weightInput || parseFloat(heightInput) <= 0 || parseFloat(weightInput) <= 0) {
+            alert("Lütfen boy ve kilo bilgilerinizi eksiksiz ve geçerli bir şekilde giriniz.");
+            return; // return diyerek fonksiyonu burada kesiyoruz, sonraki adıma geçmesini engelliyoruz
+        }
+
+        // Değerler geçerliyse sisteme kaydet
+        window.userData.height = parseFloat(heightInput);
+        window.userData.weight = parseFloat(weightInput);
         nextStep(3);
+        
     } else {
         const manualVal = parseFloat(document.getElementById('manual-wrist').value);
-        if(!manualVal) {
+        if(!manualVal || manualVal <= 0) {
             alert("Lütfen geçerli bir bilek çevresi girin.");
             return;
         }

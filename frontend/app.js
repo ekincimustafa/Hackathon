@@ -34,6 +34,11 @@ const canvasCtx = canvasElement.getContext('2d', { willReadFrequently: true });
 const hiddenCanvas = document.createElement('canvas');
 const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
 
+const flipBtn = document.getElementById('flip-camera-btn');
+if (!isMobileDevice && flipBtn) {
+    flipBtn.style.display = 'none';
+}
+
 // --- MEDIAPIPE BAŞLATMA ---
 async function initializeMediaPipe() {
     const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
@@ -168,8 +173,16 @@ async function predictWebcam() {
 
             handGuide.style.display = 'block';
 
-            // Başparmak serçe parmağın solundaysa sağ el şablonu, sağındaysa sol el şablonu
-            if (thumbTip.x < pinkyTip.x) {
+            // Başparmak ve serçe parmak pozisyonuna göre sağ/sol el ayrımı
+            let isLeftTemplate = thumbTip.x < pinkyTip.x;
+            
+            // YENİ EKLENEN ZIRH: Arka kamerada (environment) ayna efekti olmadığı için 
+            // fiziksel yönler tam tersidir. Bu yüzden şablonu tersine çeviriyoruz!
+            if (currentFacingMode === "environment") {
+                isLeftTemplate = !isLeftTemplate;
+            }
+
+            if (isLeftTemplate) {
                 handGuide.style.transform = "translate(-50%, -50%) scaleX(-1)";
             } else {
                 handGuide.style.transform = "translate(-50%, -50%) scaleX(1)";

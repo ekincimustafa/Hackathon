@@ -382,6 +382,6 @@ async def simulate_alt(data: AlternativeRequest):
         "scraped_data": shared_context.get("watch_data"), 
         "stylist_data": shared_context.get("stylist_report")    
     }
-    
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

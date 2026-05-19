@@ -413,7 +413,7 @@ window.nextStep = function(stepNumber) {
             }
         }, 1500);
 
-        fetch('https://hackathon-a0bj.onrender.com/analyze', {
+        fetch('https://hackathon-wr2h.onrender.com/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(window.userData)
@@ -567,7 +567,7 @@ window.loadAlternative = function(styleText) {
         skinColorHex: window.userData.skinColorHex || "#000000"
     };
 
-    fetch('https://hackathon-a0bj.onrender.com/simulate_alternative', {
+    fetch('https://hackathon-wr2h.onrender.com/simulate_alternative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(altData)

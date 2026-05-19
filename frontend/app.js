@@ -371,11 +371,30 @@ window.nextStep = function(stepNumber) {
             return; 
         }
 
-        // UI Hazırlıkları (Önce yükleme animasyonunu aç, diğerlerini gizle)
+        // UI Hazırlıkları
         document.getElementById('ai-loading').style.display = 'flex';
         document.getElementById('ai-results').style.display = 'none';
         document.getElementById('error-container').style.display = 'none';
-        document.getElementById('loading-text').innerText = "Otonom ajanlar saat özelliklerini inceliyor...";
+        
+        // --- JÜRİ ŞOVU: CANLI AJAN TERMİNALİ ---
+        const loadingText = document.getElementById('loading-text');
+        const agentMessages = [
+            "[Sistem] Paylaşımlı bağlam oluşturuluyor...",
+            "[Arama Ajanı] Trendyol veri tabanına sızılıyor...",
+            "[Veri Ajanı] JSON-LD meta verileri ayrıştırılıyor...",
+            "[Güvenlik] Anti-Bot (Cloudflare) atlatılıyor...",
+            "[Stilist Ajan] Biyometrik verilerinizle uyum hesaplanıyor...",
+            "[İnceleme Ajanı] Son rapor hazırlanıyor..."
+        ];
+        
+        let msgIndex = 0;
+        loadingText.innerText = agentMessages[0];
+        window.agentInterval = setInterval(() => {
+            msgIndex++;
+            if(msgIndex < agentMessages.length) {
+                loadingText.innerText = agentMessages[msgIndex];
+            }
+        }, 1500); // Her 1.5 saniyede bir metni değiştir
 
         fetch('http://127.0.0.1:8000/analyze', {
             method: 'POST',
@@ -384,6 +403,9 @@ window.nextStep = function(stepNumber) {
         })
         .then(response => response.json())
         .then(data => {
+
+            clearInterval(window.altInterval);
+
             console.log("Backend Yanıtı:", data);
             document.getElementById('ai-loading').style.display = 'none'; // Yüklemeyi gizle
 
@@ -410,6 +432,8 @@ window.nextStep = function(stepNumber) {
             }
         })
         .catch(error => {
+            clearInterval(window.altInterval);
+            
             document.getElementById('ai-loading').style.display = 'none';
             const errorContainer = document.getElementById('error-container');
             errorContainer.style.display = 'block';
@@ -490,7 +514,24 @@ function renderAIResults(data) {
 window.loadAlternative = function(styleText) {
     document.getElementById('ai-results').style.display = 'none';
     document.getElementById('ai-loading').style.display = 'flex';
-    document.getElementById('loading-text').innerText = `Trendyol'da "${styleText}" aranıyor...`;
+    
+    // --- JÜRİ ŞOVU: ALTERNATİF ROTA TERMİNALİ ---
+    const loadingText = document.getElementById('loading-text');
+    const altMessages = [
+        `[Arama Ajanı] "${styleText}" için e-ticaret taranıyor...`,
+        "[Veri Ajanı] Gerçek ürün bağlantısı bulundu...",
+        "[Güvenlik] Sistem engelleri atlatılıyor...",
+        "[Stilist Ajan] Yeni alternatif anatomik olarak analiz ediliyor..."
+    ];
+    
+    let msgIdx = 0;
+    loadingText.innerText = altMessages[0];
+    window.altInterval = setInterval(() => {
+        msgIdx++;
+        if(msgIdx < altMessages.length) {
+            loadingText.innerText = altMessages[msgIdx];
+        }
+    }, 1200);
 
     const altData = {
         target_style: styleText,
@@ -506,6 +547,9 @@ window.loadAlternative = function(styleText) {
     })
     .then(res => res.json())
     .then(data => {
+
+        clearInterval(window.altInterval);
+
         if (data.status === "success") {
             document.getElementById('ai-loading').style.display = 'none';
             renderAIResults(data); // Aynı ekranı Trendyol'dan gelen gerçek verilerle güncelle
@@ -516,6 +560,9 @@ window.loadAlternative = function(styleText) {
         }
     })
     .catch(err => {
+
+        clearInterval(window.altInterval);
+
         console.error("Hata:", err);
         document.getElementById('ai-loading').style.display = 'none';
         document.getElementById('ai-results').style.display = 'flex';

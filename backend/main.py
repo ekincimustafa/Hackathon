@@ -128,7 +128,8 @@ def agentic_universal_scraper(url: str):
 def trendyol_search_agent(query: str):
     print(f"\n[Arama Ajanı] Gelen Ham İstek: {query}")
     
-    # Özel karakterleri temizle
+    # --- YENİ ZIRH: Tireleri silmek yerine boşluğa çevir (38-40 -> 38 40 olsun) ---
+    query = query.replace('-', ' ')
     clean_query = re.sub(r'[^\w\s]', '', query)
     words = clean_query.split()
     
@@ -174,35 +175,56 @@ def trendyol_search_agent(query: str):
     print("[Arama Ajanı] Hiçbir arama stratejisi işe yaramadı.")
     return None
 
-# --- 6. API ENDPOINT'İ ---
+# --- 6. API ENDPOINT'İ (PAYLAŞIMLI BAĞLAM MİMARİSİ) ---
 @app.post("/analyze")
 async def analyze_watch(data: AnalysisRequest):
     print(f"\n--- YENİ SANAL DENEME İSTEĞİ ({data.wristRangeStr} Bilek) ---")
     
-    if data.manualWatchSize:
-        watch_features = {
-            "kasa_capi": data.manualWatchSize, "materyal": "Bilinmiyor", "renk": "Bilinmiyor",
-            "kordon": "Bilinmiyor", "kaynak": "Kullanıcı Manuel Girişi (Plan B2)"
+    # 1. ADIM: PAYLAŞIMLI BAĞLAM (SHARED CONTEXT) OLUŞTURULUYOR
+    # Tüm ajanların bakacağı "Tek Gerçeklik Kaynağı" (Ground Truth)
+    shared_context = {
+        "user_anatomy": {
+            "cinsiyet": "Erkek" if data.gender == "male" else "Kadın",
+            "bilek": data.wristRangeStr,
+            "ten_rengi": data.skinColorHex if data.skinColorHex else 'Belirtilmemiş',
+            "manuel_mudahale": data.manualWatchSize
+        },
+        "watch_data": None,
+        "stylist_report": None,
+        "system_status": "initializing"
+    }
+    print("[Sistem] Paylaşımlı Bağlam (Shared Context) başarıyla oluşturuldu.")
+
+    # 2. ADIM: KAZIMA AJANI (SCRAPER AGENT) BAĞLAMI GÜNCELLER
+    print("[Kazıma Ajanı] Bağlamdaki veriler okunuyor ve web'den ürün verisi çekiliyor...")
+    if shared_context["user_anatomy"]["manuel_mudahale"]:
+        shared_context["watch_data"] = {
+            "kasa_capi": shared_context["user_anatomy"]["manuel_mudahale"],
+            "materyal": "Bilinmiyor",
+            "renk": "Bilinmiyor",
+            "kordon": "Bilinmiyor",
+            "kaynak": "Kullanıcı Manuel Girişi (Plan B2)"
         }
     else:
-        watch_features = agentic_universal_scraper(data.productLink)
+        shared_context["watch_data"] = agentic_universal_scraper(data.productLink)
 
-    kasa_capi = watch_features.get("kasa_capi") if watch_features else None
-    
+    # Güvenlik Duvarı veya Veri Çökmesi Kontrolü
+    kasa_capi = shared_context["watch_data"].get("kasa_capi") if shared_context["watch_data"] else None
     if not kasa_capi or kasa_capi == "Belirtilmemiş" or kasa_capi is None:
+        print("[Sistem] Otonom veri çekilemedi. Plan B2 (Manuel) devreye giriyor.")
         return {
             "status": "manual_input_needed",
-            "message": "Güvenlik duvarları nedeniyle saatin ölçülerini otomatik okuyamadık. Analiz için lütfen kasa çapını aşağıdan seçin."
+            "message": "Güvenlik duvarları nedeniyle saatin ölçülerini otomatik okuyamadık. Lütfen kasa çapını aşağıdan seçin."
         }
 
-    print("\n[Stilist Ajan] Yapay Zeka kişiselleştirilmiş moda yorumu üretiyor...")
-    cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
-
+    # 3. ADIM: STİLİST AJAN BAĞLAMI OKUYOR VE YORUM YAPIYOR
+    print("[Stilist Ajan] Bağlam havuzundan kullanıcı ve ürün verileri sentezleniyor...")
+    
     prompt_stylist = f"""
     Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
 
-    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex if data.skinColorHex else 'Belirtilmemiş'}
-    SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
+    KULLANICI: Cinsiyet: {shared_context['user_anatomy']['cinsiyet']}, Bilek: {shared_context['user_anatomy']['bilek']}, Ten (Hex): {shared_context['user_anatomy']['ten_rengi']}
+    SAAT: Çap: {shared_context['watch_data'].get('kasa_capi', 'Bilinmiyor')}, Materyal: {shared_context['watch_data'].get('materyal', 'Bilinmiyor')}
 
     KURALLAR:
     1. YORUM YAPISI: Kullanıcıya rozet destekli mikro satırlar halinde bir analiz yaz. HTML kullanarak her satırın başına aşağıdaki gibi kapsüller ekle ve aralarına <br><br> koy:
@@ -211,16 +233,15 @@ async def analyze_watch(data: AnalysisRequest):
        <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>UYUM</span> [Bilek ölçüsü ve kasa çapı uyumu üzerine tek cümle]
        <br><br>
        <span style='background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; letter-spacing: 1px; margin-right: 10px; vertical-align: middle;'>TON</span> [Saat materyali ile doğal ten renginin alt ton uyumu üzerine tek cümle]
-    2. CİNSİYET UYARISI: Uyumsuzluk varsa 'warning' değerine sadece 'Bu saat kadın/erkek saatidir.' yaz ve match_score değerini KESİNLİKLE 45'in altında tut. Yoksa null yap.
+       ⚠️ KRİTİK KURAL: Metin içinde KESİNLİKLE ham renk kodlarını (#DBA399 vb.) yazma! Yerine 'buğday ten', 'açık ten' gibi kelimeler kullan. JSON hatası almamak için metinde çift tırnak (") ASLA kullanma, sadece tek tırnak (') kullan. 
+    2. CİNSİYET UYARISI: Eğer kullanıcı "Kadın" ise ve seçilen saat bariz bir erkek saatiyse SADECE "Bu saat erkek saatidir." yaz. Eğer cinsiyet uyumsuzluğu yoksa "warning" değerini null yap. Cinsiyet uyumsuzluğu varsa skoru KESİNLİKLE 45'in altında tut.
     3. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
-    4. ÖNERİLER: Sistemin e-ticaret sitesinde otomatik arama yapabilmesi için MAKSİMUM 3-4 KELİMELİK çok net ve kısa ARAMA KELİMELERİ belirle (Örn: '38mm çelik klasik', '40mm siyah deri', 'titanyum spor'). Kesinlikle uzun cümleler veya şiirsel betimlemeler kullanma!    
-    5. JSON KORUMASI: Metinlerde ASLA çift tırnak (") kullanma! Tek tırnak (') kullan.
-    
+    4. ÖNERİLER: Sistemin Trendyol'da otomatik arama yapabilmesi için MAKSİMUM 3 KELİMELİK, ÇOK KISA e-ticaret arama terimleri üret (Örn: '38mm çelik klasik', '40mm siyah deri'). KESİNLİKLE uzun cümleler, tire (-) veya "aralığında", "esintili" gibi kelimeler KULLANMA!    
     ÇIKTI FORMATI (SADECE JSON):
     {{
         "match_score": <10 ile 100 arası>,
         "warning": "<Sadece kısa uyarı metni veya null>",
-        "stylist_comment": "<Detaylı ve vurgulu HTML metin>",
+        "stylist_comment": "<Detaylı HTML metin>",
         "recommendations": ["<Öneri 1>", "<Öneri 2>"]
     }}
     """
@@ -228,47 +249,80 @@ async def analyze_watch(data: AnalysisRequest):
     try:
         res_stylist = scraping_agent.generate_content(prompt_stylist)
         clean_stylist_json = res_stylist.text.replace('```json', '').replace('```', '').strip()
-        stylist_data = json.loads(clean_stylist_json)
-        print(f"[Stilist Ajan] Başarılı! Skor: %{stylist_data.get('match_score')}")
+        shared_context["stylist_report"] = json.loads(clean_stylist_json)
+        print(f"[Stilist Ajan] Bağlam güncellendi. Skor: %{shared_context['stylist_report'].get('match_score')}")
     except Exception as e:
         print(f"[Stilist Ajan] Hata oluştu: {e}")
-        stylist_data = {"match_score": 75, "stylist_comment": "Analiz için ek görsel verilere ihtiyaç var."}
+        shared_context["stylist_report"] = {
+            "match_score": 75,
+            "stylist_comment": "Saat modeliniz tarzınıza şık bir dokunuş katacaktır ancak tam analiz için ek verilere ihtiyaç var."
+        }
 
-    return {"status": "success", "message": "Başarılı.", "scraped_data": watch_features, "stylist_data": stylist_data}
+    shared_context["system_status"] = "success"
 
-# --- 7. ALTERNATİF GERÇEK ZAMANLI ARAMA ENDPOINT'İ ---
+    return {
+        "status": shared_context["system_status"],
+        "message": "Bağlam mimarisi başarıyla tamamlandı.",
+        "scraped_data": shared_context["watch_data"],
+        "stylist_data": shared_context["stylist_report"] 
+    }
+
+# --- 7. ALTERNATİF GERÇEK ZAMANLI ARAMA ENDPOINT'İ (PAYLAŞIMLI BAĞLAM) ---
 @app.post("/simulate_alternative")
 async def simulate_alt(data: AlternativeRequest):
     print(f"\n--- ALTERNATİF ROTA İSTEĞİ: {data.target_style} ---")
     
-    cinsiyet_tr = "Erkek" if data.gender == "male" else "Kadın"
-    arama_terimi = f"{data.target_style} {cinsiyet_tr}"
+    # 1. PAYLAŞIMLI BAĞLAM (SHARED CONTEXT) OLUŞTURULUYOR
+    shared_context = {
+        "user_anatomy": {
+            "cinsiyet": "Erkek" if data.gender == "male" else "Kadın",
+            "bilek": data.wristRangeStr,
+            "ten_rengi": data.skinColorHex
+        },
+        "target_style": data.target_style,
+        "watch_data": None,
+        "stylist_report": None
+    }
+    print("[Sistem] Alternatif rota için Paylaşımlı Bağlam oluşturuldu.")
     
+    arama_terimi = f"{shared_context['target_style']} {shared_context['user_anatomy']['cinsiyet']}"
     gercek_urun_linki = trendyol_search_agent(arama_terimi)
     
     if not gercek_urun_linki:
         return {"status": "error", "message": "Bu tarza uygun ürün bulunamadı."}
         
-    watch_features = agentic_universal_scraper(gercek_urun_linki)
+    print("[Veri Ajanı] Gerçek ürün verisi bağlama aktarılıyor...")
+    shared_context["watch_data"] = agentic_universal_scraper(gercek_urun_linki)
     
+    # --- YENİ EKLENEN KORUMA KALKANI (KOTA DOLMASI DURUMUNDA) ---
+    if not shared_context["watch_data"]: 
+        shared_context["watch_data"] = {
+            "kasa_capi": "Bilinmiyor",
+            "materyal": "Bilinmiyor",
+            "resim_url": "Belirtilmemiş"
+        }
+    # -----------------------------------
+    
+    print("[Stilist Ajan] Alternatif model analiz ediliyor...")
     prompt_alt = f"""
     Sen lüks saatler ve stil konusunda fütüristik bir Yapay Zeka Asistanısın.
-    KULLANICI: Cinsiyet: {cinsiyet_tr}, Bilek: {data.wristRangeStr}, Ten (Hex): {data.skinColorHex}
-    YENİ SAAT: Çap: {watch_features.get('kasa_capi', 'Bilinmiyor')}, Materyal: {watch_features.get('materyal', 'Bilinmiyor')}
     
-    Kullanıcı "{data.target_style}" tarzına tıkladı ve ona bu gerçek saat bulundu.
+    KULLANICI: Cinsiyet: {shared_context['user_anatomy']['cinsiyet']}, Bilek: {shared_context['user_anatomy']['bilek']}, Ten: {shared_context['user_anatomy']['ten_rengi']}
+    SİSTEMİN BULDUĞU YENİ SAAT: Çap: {shared_context['watch_data'].get('kasa_capi', 'Bilinmiyor')}, Materyal: {shared_context['watch_data'].get('materyal', 'Bilinmiyor')}
+    
+    Kullanıcı "{shared_context['target_style']}" tarzına tıkladı ve sistem ona gerçek zamanlı olarak yukarıdaki saati buldu.
     
     KURALLAR:
-    1. YORUM: Neden onun için KUSURSUZ bir seçim olduğunu 3-4 cümleyle anlat. 
+    1. YORUM: Kullanıcıya bu yeni saatin neden onun için KUSURSUZ (veya çok daha iyi) bir seçim olduğunu 3-4 cümleyle anlat. 
     2. VURGU: Önemli kelimeleri <span style='color: #FFFFFF; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);'> kelime </span> ile vurgula.
-    3. SKOR: match_score KESİNLİKLE 85 ile 100 arasında olmalı.
-    4. Çift tırnak (") kullanma.
+    3. SKOR: Bu saat özel seçildiği için match_score KESİNLİKLE 85 ile 100 arasında olmalı.
+    4. Çıktın KESİNLİKLE geçerli bir JSON olmalıdır ve içinde çift tırnak (") KULLANILMAMALIDIR (tek tırnak kullan).
     
     ÇIKTI FORMATI (SADECE JSON):
     {{
         "match_score": <85 ile 100 arası>,
         "warning": null,
-        "stylist_comment": "<Detaylı ve vurgulu HTML metin>",
+        "stylist_comment": "<Detaylı HTML metin>",
         "recommendations": []
     }}
     """
@@ -276,8 +330,13 @@ async def simulate_alt(data: AlternativeRequest):
     try:
         res = scraping_agent.generate_content(prompt_alt)
         clean_json = res.text.replace('```json', '').replace('```', '').strip()
-        stylist_data = json.loads(clean_json)
-        return {"status": "success", "scraped_data": watch_features, "stylist_data": stylist_data}
+        shared_context["stylist_report"] = json.loads(clean_json)
+        
+        return {
+            "status": "success",
+            "scraped_data": shared_context["watch_data"], 
+            "stylist_data": shared_context["stylist_report"]    
+        }
     except Exception as e:
         print(f"[Ajan] Alternatif üretilirken hata: {e}")
         return {"status": "error"}

@@ -413,7 +413,7 @@ window.nextStep = function(stepNumber) {
             }
         }, 1500);
 
-        fetch('http://127.0.0.1:8000/analyze', {
+        fetch('https://sanal-deneme.onrender.com/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(window.userData)
@@ -567,7 +567,7 @@ window.loadAlternative = function(styleText) {
         skinColorHex: window.userData.skinColorHex || "#000000"
     };
 
-    fetch('http://127.0.0.1:8000/simulate_alternative', {
+    fetch('https://sanal-deneme.onrender.com/simulate_alternative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(altData)

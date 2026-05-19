@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+google-generativeai
+beautifulsoup4
+curl_cffi
+pydantic
+python-dotenv
